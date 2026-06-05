@@ -1,0 +1,27 @@
+{
+  "name": "trading-platform-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@tradingview/lightweight-charts": "npm:lightweight-charts@^5.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "lightweight-charts": "^5.2.0",
+    "prop-types": "^15.8.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vite": "^7.0.0"
+  },
+  "scripts": {
+    "start": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "test": "cd .. && node frontend/scripts/test-chart-tasks.mjs",
+    "test:validate": "cd .. && node frontend/scripts/generate-chart-release-evidence.mjs",
+    "release:evidence": "cd .. && node frontend/scripts/generate-chart-release-evidence.mjs",
+    "validate:accessibility": "cd .. && node frontend/scripts/validate-accessibility.js",
+    "validate:performance": "cd .. && node frontend/scripts/validate-performance.js",
+    "validate:data": "cd .. && node frontend/scripts/validate-chart-data.js",
+    "validate:visual": "cd .. && node frontend/scripts/validate-visual.mjs",
+    "smoke:release": "cd .. && node frontend/scripts/smoke-chart-release.mjs",
+    "preview": "vite preview --host 0.0.0.0"
+  }
+}

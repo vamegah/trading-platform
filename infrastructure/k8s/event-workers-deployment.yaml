@@ -1,0 +1,195 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-api-worker
+  labels:
+    app: external-api-worker
+    app.kubernetes.io/component: event-consumer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: external-api-worker
+  template:
+    metadata:
+      labels:
+        app: external-api-worker
+        app.kubernetes.io/component: event-consumer
+    spec:
+      containers:
+        - name: external-api-worker
+          image: trading-platform/backend:latest
+          command: ["python", "-m", "backend.services.api_orchestrator.worker"]
+          envFrom:
+            - configMapRef:
+                name: trading-platform-config
+            - secretRef:
+                name: trading-platform-external-apis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: signal-worker
+  labels:
+    app: signal-worker
+    app.kubernetes.io/component: event-consumer
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: signal-worker
+  template:
+    metadata:
+      labels:
+        app: signal-worker
+        app.kubernetes.io/component: event-consumer
+    spec:
+      containers:
+        - name: signal-worker
+          image: trading-platform/backend:latest
+          command: ["python", "-m", "backend.services.signal_orchestrator.worker"]
+          envFrom:
+            - configMapRef:
+                name: trading-platform-config
+            - secretRef:
+                name: trading-platform-external-apis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: execution-worker
+  labels:
+    app: execution-worker
+    app.kubernetes.io/component: event-consumer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: execution-worker
+  template:
+    metadata:
+      labels:
+        app: execution-worker
+        app.kubernetes.io/component: event-consumer
+    spec:
+      containers:
+        - name: execution-worker
+          image: trading-platform/backend:latest
+          command: ["python", "-m", "backend.services.execution_service.worker"]
+          envFrom:
+            - configMapRef:
+                name: trading-platform-config
+            - secretRef:
+                name: trading-platform-external-apis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portfolio-worker
+  labels:
+    app: portfolio-worker
+    app.kubernetes.io/component: event-consumer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: portfolio-worker
+  template:
+    metadata:
+      labels:
+        app: portfolio-worker
+        app.kubernetes.io/component: event-consumer
+    spec:
+      containers:
+        - name: portfolio-worker
+          image: trading-platform/backend:latest
+          command: ["python", "-m", "backend.services.portfolio_service.worker"]
+          envFrom:
+            - configMapRef:
+                name: trading-platform-config
+            - secretRef:
+                name: trading-platform-external-apis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backtest-worker
+  labels:
+    app: backtest-worker
+    app.kubernetes.io/component: event-consumer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backtest-worker
+  template:
+    metadata:
+      labels:
+        app: backtest-worker
+        app.kubernetes.io/component: event-consumer
+    spec:
+      containers:
+        - name: backtest-worker
+          image: trading-platform/backend:latest
+          command: ["python", "-m", "backend.services.backtest_engine.worker"]
+          envFrom:
+            - configMapRef:
+                name: trading-platform-config
+            - secretRef:
+                name: trading-platform-external-apis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marketplace-worker
+  labels:
+    app: marketplace-worker
+    app.kubernetes.io/component: event-consumer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: marketplace-worker
+  template:
+    metadata:
+      labels:
+        app: marketplace-worker
+        app.kubernetes.io/component: event-consumer
+    spec:
+      containers:
+        - name: marketplace-worker
+          image: trading-platform/backend:latest
+          command: ["python", "-m", "backend.services.marketplace.worker"]
+          envFrom:
+            - configMapRef:
+                name: trading-platform-config
+            - secretRef:
+                name: trading-platform-external-apis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: personalization-worker
+  labels:
+    app: personalization-worker
+    app.kubernetes.io/component: event-consumer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: personalization-worker
+  template:
+    metadata:
+      labels:
+        app: personalization-worker
+        app.kubernetes.io/component: event-consumer
+    spec:
+      containers:
+        - name: personalization-worker
+          image: trading-platform/backend:latest
+          command: ["python", "-m", "backend.services.personalization.worker"]
+          envFrom:
+            - configMapRef:
+                name: trading-platform-config
+            - secretRef:
+                name: trading-platform-external-apis

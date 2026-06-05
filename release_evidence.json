@@ -1,0 +1,80 @@
+{
+  "evidence": {
+    "broker_certification": {
+      "accepted": false,
+      "artifact_uri": "",
+      "notes": "",
+      "owner": "",
+      "reviewed_at": ""
+    },
+    "cloud_infrastructure_plan": {
+      "accepted": false,
+      "artifact_uri": "",
+      "notes": "",
+      "owner": "",
+      "reviewed_at": ""
+    },
+    "dr_outage_drill": {
+      "accepted": false,
+      "artifact_uri": "",
+      "notes": "",
+      "owner": "",
+      "reviewed_at": ""
+    },
+    "legal_compliance_review": {
+      "accepted": false,
+      "artifact_uri": "",
+      "notes": "",
+      "owner": "",
+      "reviewed_at": ""
+    },
+    "load_soak_test": {
+      "accepted": false,
+      "artifact_uri": "",
+      "notes": "",
+      "owner": "",
+      "reviewed_at": ""
+    },
+    "model_validation": {
+      "accepted": false,
+      "artifact_uri": "",
+      "notes": "",
+      "owner": "",
+      "reviewed_at": ""
+    },
+    "paper_trading_validation": {
+      "accepted": false,
+      "artifact_uri": "",
+      "notes": "",
+      "owner": "",
+      "reviewed_at": ""
+    },
+    "persistent_controls_restore": {
+      "accepted": false,
+      "artifact_uri": "",
+      "notes": "",
+      "owner": "",
+      "reviewed_at": ""
+    },
+    "provider_certification": {
+      "accepted": false,
+      "artifact_uri": "",
+      "notes": "",
+      "owner": "",
+      "reviewed_at": ""
+    },
+    "security_assessment": {
+      "accepted": false,
+      "artifact_uri": "",
+      "notes": "",
+      "owner": "",
+      "reviewed_at": ""
+    }
+  },
+  "release": {
+    "candidate": "rc-unapproved",
+    "environment": "production",
+    "live_trading_requested": false
+  },
+  "schema_version": 1
+}

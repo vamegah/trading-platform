@@ -1,0 +1,80 @@
+{
+  "evidence": {
+    "broker_certification": {
+      "accepted": false,
+      "artifact_uri": "s3://release-evidence/broker-certification.pdf",
+      "notes": "Sandbox submit/cancel/reconcile evidence for each broker.",
+      "owner": "execution",
+      "reviewed_at": ""
+    },
+    "cloud_infrastructure_plan": {
+      "accepted": false,
+      "artifact_uri": "s3://release-evidence/terraform-production-plan.json",
+      "notes": "Reviewed staging, production, and DR cloud plan.",
+      "owner": "sre",
+      "reviewed_at": ""
+    },
+    "dr_outage_drill": {
+      "accepted": false,
+      "artifact_uri": "s3://release-evidence/dr-drill-report.json",
+      "notes": "Backup restore, provider failover, Redis recovery, and broker outage drill.",
+      "owner": "sre",
+      "reviewed_at": ""
+    },
+    "legal_compliance_review": {
+      "accepted": false,
+      "artifact_uri": "s3://release-evidence/legal-approval.pdf",
+      "notes": "Counsel-approved disclosures, suitability policy, privacy policy, and jurisdiction restrictions.",
+      "owner": "compliance",
+      "reviewed_at": ""
+    },
+    "load_soak_test": {
+      "accepted": false,
+      "artifact_uri": "s3://release-evidence/load-soak-report.json",
+      "notes": "Production-like 10k user, 5k instrument, market-open burst, and soak test.",
+      "owner": "sre",
+      "reviewed_at": ""
+    },
+    "model_validation": {
+      "accepted": false,
+      "artifact_uri": "s3://release-evidence/model-validation-report.json",
+      "notes": "Trained artifacts, calibration, drift, explainability, and promotion approval.",
+      "owner": "ml",
+      "reviewed_at": ""
+    },
+    "paper_trading_validation": {
+      "accepted": false,
+      "artifact_uri": "s3://release-evidence/paper-trading-validation.json",
+      "notes": "Extended paper trading with reconciliation, attribution, slippage, risk, and drift review.",
+      "owner": "trading-ops",
+      "reviewed_at": ""
+    },
+    "persistent_controls_restore": {
+      "accepted": false,
+      "artifact_uri": "s3://release-evidence/persistent-controls-restore.json",
+      "notes": "Secret, audit, privacy, and compliance evidence restore drill.",
+      "owner": "platform",
+      "reviewed_at": ""
+    },
+    "provider_certification": {
+      "accepted": false,
+      "artifact_uri": "s3://release-evidence/provider-certification.pdf",
+      "notes": "Provider contracts, sandbox checks, data rights, failover, and SLA evidence.",
+      "owner": "data-platform",
+      "reviewed_at": ""
+    },
+    "security_assessment": {
+      "accepted": false,
+      "artifact_uri": "s3://release-evidence/security-assessment.json",
+      "notes": "SAST, dependency, container, IaC, secret, API, and penetration test remediation.",
+      "owner": "security",
+      "reviewed_at": ""
+    }
+  },
+  "release": {
+    "candidate": "rc-YYYYMMDD",
+    "environment": "production",
+    "live_trading_requested": false
+  },
+  "schema_version": 1
+}

@@ -1,0 +1,234 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  SECRET_SCAN_PATHS: >-
+    backend scripts config docs infrastructure .github migrations
+    frontend/src frontend/scripts frontend/package.json frontend/vite.config.js
+    docker-compose.yml Makefile README.md TASKS.md
+
+jobs:
+  backend:
+    name: Backend Quality
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: trading_test
+          POSTGRES_USER: trading_user
+          POSTGRES_PASSWORD: trading_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U trading_user -d trading_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://trading_user:trading_password@localhost:5432/trading_test
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY: ci-secret-key-with-enough-length-for-tests
+      ENCRYPTION_KEY: ci-encryption-key-with-enough-length
+      CREATE_TABLES_ON_STARTUP: "false"
+      LIVE_TRADING_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+      - name: Lint backend
+        run: ruff check backend scripts
+      - name: Test backend
+        run: pytest -q
+      - name: Compile Python modules
+        run: python -m compileall backend scripts migrations
+      - name: Validate migrations import
+        run: python -c "from backend.shared.database import Base; import backend.shared.models; print(len(Base.metadata.tables))"
+      - name: Upload pytest cache on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-cache-${{ github.sha }}
+          path: .pytest_cache
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Frontend release gates
+        run: npm --prefix frontend run test:validate
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist-${{ github.sha }}
+          path: frontend/dist
+          if-no-files-found: error
+      - name: Upload frontend chart evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-chart-evidence-${{ github.sha }}
+          path: frontend/release-evidence/*.json
+          if-no-files-found: warn
+
+  security:
+    name: Security Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install security tools
+        run: python -m pip install --upgrade pip && python -m pip install pip-audit bandit detect-secrets
+      - name: Python dependency audit
+        run: pip-audit -r requirements.txt
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Frontend dependency audit
+        working-directory: frontend
+        env:
+          NODE_OPTIONS: --use-system-ca
+        run: npm audit --audit-level=high
+      - name: Static security scan
+        run: bandit -r backend scripts -ll
+      - name: Secret scan
+        run: detect-secrets scan --baseline .secrets.baseline ${{ env.SECRET_SCAN_PATHS }}
+
+  infrastructure:
+    name: Infrastructure Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Install YAML parser
+        run: python -m pip install PyYAML
+      - name: Terraform format
+        working-directory: infrastructure/terraform
+        run: terraform fmt -check -recursive
+      - name: Terraform init
+        working-directory: infrastructure/terraform
+        run: terraform init -backend=false
+      - name: Terraform validate
+        working-directory: infrastructure/terraform
+        run: terraform validate
+      - name: Kubernetes manifest parse check
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          for path in Path("infrastructure/k8s").glob("*.yaml"):
+              docs = list(yaml.safe_load_all(path.read_text(encoding="utf-8")))
+              assert docs, f"{path} did not contain Kubernetes YAML"
+          print("kubernetes manifests parsed")
+          PY
+
+  containers:
+    name: Container Build And Scan
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/backend.Dockerfile
+          load: true
+          tags: trading-platform-backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/frontend.Dockerfile
+          load: true
+          tags: trading-platform-frontend:${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: trading-platform-backend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: trading-platform-frontend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+  release-readiness:
+    name: Release Readiness
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, security, infrastructure, containers]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+      - name: Generate staging readiness report
+        run: python scripts/production_readiness.py --environment staging --output release-candidate-staging.json
+      - name: Review implemented M9 tasks
+        run: python scripts/release_candidate_review.py --output release-review-m9.json
+      - name: Upload release readiness evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-readiness-${{ github.sha }}
+          path: |
+            release-candidate-staging.json
+            release-review-m9.json

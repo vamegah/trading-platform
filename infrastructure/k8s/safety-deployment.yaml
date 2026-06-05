@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: safety-service
+  labels:
+    app: safety-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: safety-service
+  template:
+    metadata:
+      labels:
+        app: safety-service
+    spec:
+      containers:
+        - name: safety-service
+          image: trading-platform/backend:latest
+          command: ["uvicorn", "backend.services.safety_service.main:app"]
+          args: ["--host", "0.0.0.0", "--port", "8030"]
+          ports:
+            - containerPort: 8030
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: safety-service
+spec:
+  selector:
+    app: safety-service
+  ports:
+    - port: 80
+      targetPort: 8030
+

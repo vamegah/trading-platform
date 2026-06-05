@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stress-test-service
+  labels:
+    app: stress-test-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: stress-test-service
+  template:
+    metadata:
+      labels:
+        app: stress-test-service
+    spec:
+      containers:
+        - name: stress-test-service
+          image: trading-platform/backend:latest
+          command: ["uvicorn", "backend.services.stress_test_service.main:app"]
+          args: ["--host", "0.0.0.0", "--port", "8020"]
+          ports:
+            - containerPort: 8020
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stress-test-service
+spec:
+  selector:
+    app: stress-test-service
+  ports:
+    - port: 80
+      targetPort: 8020
+

@@ -1,0 +1,308 @@
+x-backend-env: &backend-env
+  ENVIRONMENT: ${ENVIRONMENT:-development}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  DATABASE_URL: ${DATABASE_URL:-postgresql://trading_user:strong_password@postgres:5432/trading_db}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  SECRET_KEY: ${SECRET_KEY:-local-development-secret-not-for-production}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:-local-development-fernet-key-not-for-production}
+  CREATE_TABLES_ON_STARTUP: ${CREATE_TABLES_ON_STARTUP:-false}
+  LIVE_TRADING_ENABLED: ${LIVE_TRADING_ENABLED:-false}
+  REQUIRE_LIVE_INTEGRATIONS: ${REQUIRE_LIVE_INTEGRATIONS:-false}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg14
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-trading_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-strong_password}
+      POSTGRES_DB: ${POSTGRES_DB:-trading_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trading_user}"]
+      interval: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://trading_user:strong_password@postgres:5432/trading_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SECRET_KEY: ${SECRET_KEY:-local-development-secret-not-for-production}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-local-development-fernet-key-not-for-production}
+      CREATE_TABLES_ON_STARTUP: ${CREATE_TABLES_ON_STARTUP:-true}
+      LIVE_TRADING_ENABLED: ${LIVE_TRADING_ENABLED:-false}
+      REQUIRE_LIVE_INTEGRATIONS: ${REQUIRE_LIVE_INTEGRATIONS:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+    command: uvicorn backend.api_gateway.main:app --host 0.0.0.0 --port 8000 --reload
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/ingestion.Dockerfile
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://trading_user:strong_password@postgres:5432/trading_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SECRET_KEY: ${SECRET_KEY:-local-development-secret-not-for-production}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-local-development-fernet-key-not-for-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+    command: python -m backend.data_pipeline.main
+
+  api-orchestrator:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://trading_user:strong_password@postgres:5432/trading_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SECRET_KEY: ${SECRET_KEY:-local-development-secret-not-for-production}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-local-development-fernet-key-not-for-production}
+    ports:
+      - "8010:8010"
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: uvicorn backend.services.api_orchestrator.main:app --host 0.0.0.0 --port 8010 --reload
+
+  signal-orchestrator:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    ports:
+      - "8011:8011"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: uvicorn backend.services.signal_orchestrator.main:app --host 0.0.0.0 --port 8011 --reload
+
+  execution-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    ports:
+      - "8021:8021"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: uvicorn backend.services.execution_service.main:app --host 0.0.0.0 --port 8021 --reload
+
+  portfolio-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    ports:
+      - "8022:8022"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: uvicorn backend.services.portfolio_service.main:app --host 0.0.0.0 --port 8022 --reload
+
+  backtest-engine:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    ports:
+      - "8023:8023"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: uvicorn backend.services.backtest_engine.main:app --host 0.0.0.0 --port 8023 --reload
+
+  marketplace-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    ports:
+      - "8024:8024"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: uvicorn backend.services.marketplace.main:app --host 0.0.0.0 --port 8024 --reload
+
+  personalization-engine:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    ports:
+      - "8025:8025"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: uvicorn backend.services.personalization.main:app --host 0.0.0.0 --port 8025 --reload
+
+  external-api-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: python -m backend.services.api_orchestrator.worker
+
+  signal-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: python -m backend.services.signal_orchestrator.worker
+
+  execution-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: python -m backend.services.execution_service.worker
+
+  portfolio-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: python -m backend.services.portfolio_service.worker
+
+  backtest-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: python -m backend.services.backtest_engine.worker
+
+  marketplace-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: python -m backend.services.marketplace.worker
+
+  personalization-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./config:/app/config
+    command: python -m backend.services.personalization.worker
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/frontend.Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    environment:
+      NGINX_PORT: 3000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

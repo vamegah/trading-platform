@@ -1,0 +1,84 @@
+equity_market_data:
+  asset_class: equity
+  data_type: quote
+  primary: polygon
+  failover:
+    - financial_modeling_prep
+    - twelve_data
+    - alpha_vantage
+  ttl_seconds: 5
+  stale_ttl_seconds: 60
+  providers:
+    polygon:
+      base_url: "https://api.polygon.io"
+      api_key_env: "POLYGON_API_KEY"
+      timeout_ms: 500
+      requests_per_minute: 300
+    financial_modeling_prep:
+      base_url: "https://financialmodelingprep.com/api/v3"
+      api_key_env: "FMP_API_KEY"
+      timeout_ms: 800
+      requests_per_minute: 250
+    twelve_data:
+      base_url: "https://api.twelvedata.com"
+      api_key_env: "TWELVE_DATA_API_KEY"
+      timeout_ms: 800
+      requests_per_minute: 120
+    alpha_vantage:
+      base_url: "https://www.alphavantage.co"
+      api_key_env: "ALPHA_VANTAGE_API_KEY"
+      timeout_ms: 1000
+      requests_per_minute: 60
+
+news_sentiment:
+  data_type: news
+  primary: finnhub
+  parallel:
+    - newscatcher
+  ttl_seconds: 60
+  providers:
+    finnhub:
+      base_url: "https://finnhub.io/api/v1"
+      api_key_env: "FINNHUB_API_KEY"
+      timeout_ms: 1000
+      requests_per_minute: 120
+    newscatcher:
+      base_url: "https://api.newscatcherapi.com"
+      api_key_env: "NEWSCATCHER_API_KEY"
+      timeout_ms: 1200
+      requests_per_minute: 60
+
+llm:
+  primary: openai
+  failover:
+    - anthropic
+  ttl_seconds: 3600
+  providers:
+    openai:
+      api_key_env: "OPENAI_API_KEY"
+      model: "gpt-4o"
+      downgrade_model: "gpt-4o-mini"
+      timeout_ms: 30000
+      tokens_per_minute: 90000
+      max_monthly_cost_usd: 5000
+    anthropic:
+      api_key_env: "ANTHROPIC_API_KEY"
+      model: "claude"
+      timeout_ms: 30000
+      tokens_per_minute: 60000
+      max_monthly_cost_usd: 3000
+
+broker_execution:
+  data_type: order
+  primary: alpaca
+  failover:
+    - ibkr
+  providers:
+    alpaca:
+      api_key_env: "ALPACA_API_KEY"
+      timeout_ms: 2000
+      requests_per_minute: 200
+    ibkr:
+      api_key_env: "IBKR_ACCOUNT_ID"
+      timeout_ms: 2000
+      requests_per_minute: 120

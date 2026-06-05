@@ -1,0 +1,29 @@
+openai:
+  gpt-4o:
+    tokens_per_minute: 90000
+    max_monthly_cost_usd: 5000
+  gpt-4o-mini:
+    tokens_per_minute: 200000
+    max_monthly_cost_usd: 1000
+anthropic:
+  claude:
+    tokens_per_minute: 60000
+    max_monthly_cost_usd: 3000
+polygon:
+  stocks:
+    requests_per_minute: 300
+financial_modeling_prep:
+  stocks:
+    requests_per_minute: 250
+twelve_data:
+  stocks:
+    requests_per_minute: 120
+alpha_vantage:
+  stocks:
+    requests_per_minute: 60
+finnhub:
+  news:
+    requests_per_minute: 120
+newscatcher:
+  news:
+    requests_per_minute: 60

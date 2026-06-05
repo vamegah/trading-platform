@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+trading_platform.db
+
+# Node
+node_modules/
+dist/
+build/
+frontend/.vite/
+frontend/dist/
+frontend/node_modules/
+frontend/release-evidence/*.json
+.vite-cache/
+
+# Environments and secrets
+.env
+frontend/.env
+*.local
+!.env.example
+!frontend/.env.example
+config/*.secret.env
+
+# Runtime and local browser artifacts
+*.log
+*.err.log
+*-local.json
+.edge-profile/
+*.pma
+*.tsbuildinfo
+
+# OS and editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

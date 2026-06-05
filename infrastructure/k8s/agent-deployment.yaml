@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: signal-orchestrator
+  labels:
+    app: signal-orchestrator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: signal-orchestrator
+  template:
+    metadata:
+      labels:
+        app: signal-orchestrator
+    spec:
+      containers:
+        - name: signal-orchestrator
+          image: trading-platform/agent:latest
+          ports:
+            - containerPort: 8010
+          env:
+            - name: SERVICE_MODULE
+              value: backend.services.signal_orchestrator.main:app
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8010
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "750m"
+              memory: "1Gi"
+            limits:
+              cpu: "3"
+              memory: "4Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: signal-orchestrator
+spec:
+  selector:
+    app: signal-orchestrator
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8010

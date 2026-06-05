@@ -1,0 +1,98 @@
+chaos_mode:
+  enabled: false
+  requires_approvals:
+    - engineering_lead
+    - sre
+  max_synthetic_error_rate: 0.05
+  abort_after_error_minutes: 2
+
+experiments:
+  exp1_provider_outage:
+    enabled: false
+    fmea_refs: ["#4", "#1"]
+    target: api_orchestrator
+    safe_default: simulate
+    objective: "Validate market-data failover and stale freshness handling."
+    success:
+      failover_latency_ms_max: 2000
+      stale_signals_blocked: true
+      audit_required: true
+
+  exp2_provider_flapping:
+    enabled: false
+    fmea_refs: ["#3", "#6"]
+    target: api_orchestrator
+    safe_default: simulate
+    objective: "Validate circuit-breaker hysteresis and provider pinning."
+    success:
+      provider_switches_max_5m: 2
+      alert_required: "Provider instability detected"
+
+  exp3_cache_poisoning:
+    enabled: false
+    fmea_refs: ["#5"]
+    target: redis
+    safe_default: simulate
+    objective: "Validate cache validation, rejection, and refresh."
+    success:
+      corrupted_data_delivered: false
+      alert_required: "Data integrity violation detected"
+
+  exp4_latency_spike_hedging:
+    enabled: false
+    fmea_refs: ["#12", "#8"]
+    target: provider_proxy
+    safe_default: simulate
+    objective: "Validate hedged requests keep quote latency under SLA."
+    success:
+      p99_latency_ms_max: 500
+
+  exp5_websocket_exhaustion:
+    enabled: false
+    fmea_refs: ["#10"]
+    target: websocket_pool
+    safe_default: simulate
+    objective: "Validate connection-pool recovery and tick replay."
+    success:
+      reconnect_latency_ms_max: 2000
+      data_loss: false
+
+  exp6_llm_budget_exhaustion:
+    enabled: false
+    fmea_refs: ["#7"]
+    target: cost_governor
+    safe_default: simulate
+    objective: "Validate LLM downgrade and budget protection."
+    success:
+      overspend_allowed: false
+      degraded_response_available: true
+
+  exp7_audit_log_disruption:
+    enabled: false
+    fmea_refs: ["#9"]
+    target: audit_shipper
+    safe_default: simulate
+    objective: "Validate local buffering and ordered replay."
+    success:
+      event_loss: false
+      ordering_preserved: true
+
+  exp8_sandbox_escape:
+    enabled: false
+    fmea_refs: ["#14"]
+    target: marketplace_sandbox
+    safe_default: simulate
+    objective: "Validate resource limits and deny-by-default egress."
+    success:
+      escape_successful: false
+      agent_terminated: true
+
+  exp9_deployment_rollback:
+    enabled: false
+    fmea_refs: ["#15"]
+    target: rollout
+    safe_default: manifest_only
+    objective: "Validate rollback while failover state remains consistent."
+    success:
+      user_errors: 0
+      failover_state_reset: false

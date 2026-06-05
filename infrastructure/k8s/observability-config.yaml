@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trading-platform-slo-dashboard
+data:
+  slo.json: |
+    {
+      "uptime_target": 0.999,
+      "signal_delivery_ms": 500,
+      "queue_depth_warning": 1000,
+      "data_freshness_seconds": 60,
+      "broker_status_required": true
+    }
+  dashboards.json: |
+    {
+      "dashboards": [
+        {
+          "name": "market-hours-slo",
+          "panels": ["uptime", "p95_latency", "queue_depth", "data_freshness", "broker_status"]
+        },
+        {
+          "name": "redis-event-bus",
+          "panels": ["redis_stream_lag", "pubsub_fanout_latency", "cache_hit_rate", "eviction_pressure"]
+        },
+        {
+          "name": "broker-execution",
+          "panels": ["broker_status", "order_rejections", "kill_switch_state", "pending_order_cancels"]
+        }
+      ]
+    }
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: trading-platform-services
+spec:
+  selector:
+    matchExpressions:
+      - key: app
+        operator: Exists
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: trading-platform-slo-alerts
+spec:
+  groups:
+    - name: trading-platform-slo
+      rules:
+        - alert: SignalDeliveryLatencyHigh
+          expr: signal_delivery_p95_ms > 500
+          for: 5m
+          labels:
+            severity: page
+          annotations:
+            summary: "Signal delivery p95 exceeded 500ms"
+        - alert: RedisStreamLagHigh
+          expr: redis_stream_lag > 1000
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Redis stream lag exceeded queue-depth SLO"

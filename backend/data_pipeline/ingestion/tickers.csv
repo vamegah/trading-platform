@@ -1,0 +1,6 @@
+symbol,name,exchange,listing_date,delisting_date
+AAPL,Apple Inc.,NASDAQ,1980-12-12,
+GOOGL,Alphabet Inc.,NASDAQ,2004-08-19,
+MSFT,Microsoft Corp.,NASDAQ,1986-03-13,
+ENRON,Enron Corp.,NYSE,1985-01-02,2001-12-02
+LEHMQ,Lehman Brothers,NYSE,1994-01-01,2008-09-15
