@@ -2,7 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Optional
 from uuid import uuid4
@@ -12,9 +12,10 @@ from fastapi import HTTPException, status
 from backend.shared.config import settings
 
 try:
-    from jose import JWTError, jwt
+    import jwt
+    from jwt import PyJWTError
 except Exception:
-    JWTError = Exception
+    PyJWTError = Exception
     jwt = None
 
 try:
@@ -83,14 +84,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     payload = data.copy()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expire = now + (
         expires_delta or timedelta(minutes=settings.access_token_expire_minutes)
     )
     payload.update(
         {
-            "exp": expire.timestamp(),
-            "iat": now.timestamp(),
+            "exp": int(expire.timestamp()),
+            "iat": int(now.timestamp()),
             "iss": settings.token_issuer,
             "jti": payload.get("jti") or str(uuid4()),
             "token_type": payload.get("token_type", "access"),
@@ -130,7 +131,7 @@ def decode_token(token: str) -> dict:
             if payload.get("iss") != settings.token_issuer:
                 return {}
             return payload
-        except JWTError:
+        except PyJWTError:
             return {}
     try:
         encoded, signature = token.rsplit(".", 1)
@@ -139,7 +140,7 @@ def decode_token(token: str) -> dict:
         payload = json.loads(base64.urlsafe_b64decode(encoded.encode()).decode())
         if payload.get("iss") != settings.token_issuer:
             return {}
-        if payload.get("exp") and datetime.utcnow().timestamp() > float(payload["exp"]):
+        if payload.get("exp") and datetime.now(timezone.utc).timestamp() > float(payload["exp"]):
             return {}
         return payload
     except Exception:

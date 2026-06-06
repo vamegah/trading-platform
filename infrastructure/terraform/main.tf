@@ -59,15 +59,15 @@ variable "enable_edge_ingress" {
 locals {
   environment_config = {
     dev = {
-      replicas = 2
+      replicas      = 2
       database_tier = "small"
     }
     staging = {
-      replicas = 3
+      replicas      = 3
       database_tier = "medium"
     }
     production = {
-      replicas = 6
+      replicas      = 6
       database_tier = "large"
     }
   }

@@ -19,7 +19,13 @@ output "reliability_controls" {
     signal_latency_ms        = 500
     redis_stream_lag_target   = 1000
     cache_hit_rate_target     = 0.9
-    dr_restore_assets         = ["database", "data_lake_metadata", "audit_store", "secret_store", "redis_event_replay"]
+    dr_restore_assets         = [
+      "database",
+      "data_lake_metadata",
+      "audit_store",
+      "secret_store",
+      "redis_event_replay",
+    ]
     load_test_target          = {
       concurrent_users = 10000
       instruments      = 5000

@@ -64,11 +64,11 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
       - name: Install Python dependencies
-        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
       - name: Lint backend
-        run: ruff check backend scripts
+        run: python -m ruff check backend scripts
       - name: Test backend
-        run: pytest -q
+        run: python -m pytest -q
       - name: Compile Python modules
         run: python -m compileall backend scripts migrations
       - name: Validate migrations import
@@ -124,10 +124,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install security tools
-        run: python -m pip install --upgrade pip && python -m pip install pip-audit bandit detect-secrets
+      - name: Install security tools and Python dependencies
+        run: python -m pip install --upgrade pip wheel setuptools && python -m pip install -r requirements.txt pip-audit bandit detect-secrets
       - name: Python dependency audit
-        run: pip-audit -r requirements.txt
+        run: python -m pip_audit --local --progress-spinner off
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
@@ -220,7 +220,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
       - name: Install Python dependencies
-        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
       - name: Generate staging readiness report
         run: python scripts/production_readiness.py --environment staging --output release-candidate-staging.json
       - name: Review implemented M9 tasks

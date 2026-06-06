@@ -41,7 +41,11 @@ resource "aws_kms_key" "platform" {
 
   lifecycle {
     precondition {
-      condition     = var.environment != "production" || var.aws_account_id == "" || data.aws_caller_identity.current.account_id == var.aws_account_id
+      condition = (
+        var.environment != "production" ||
+        var.aws_account_id == "" ||
+        data.aws_caller_identity.current.account_id == var.aws_account_id
+      )
       error_message = "Refusing production apply in an unexpected AWS account."
     }
   }
