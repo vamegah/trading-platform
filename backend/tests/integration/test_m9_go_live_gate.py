@@ -51,7 +51,9 @@ def test_go_live_gate_refuses_unaccepted_evidence_and_bad_runtime_config(tmp_pat
     assert gate["runtime_issues"]
 
 
-def test_go_live_gate_requires_manifest_live_intent_even_with_valid_evidence_and_runtime(tmp_path: Path) -> None:
+def test_go_live_gate_requires_manifest_live_intent_even_with_valid_evidence_and_runtime(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", "postgresql://trading_user:trading_password@localhost:5432/trading_test")
+    monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
     env_file = tmp_path / "prod.env"
     env_file.write_text(
         "\n".join(

@@ -7,6 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from dotenv import dotenv_values  # noqa: E402
+
 from backend.shared.config import Settings  # noqa: E402
 from scripts.evidence_manifest import load_manifest, validate_manifest  # noqa: E402
 from scripts.release_candidate_review import build_review  # noqa: E402
@@ -27,10 +29,16 @@ def build_gate(
 ) -> dict[str, object]:
     normalized_environment = environment.lower()
     runtime_env_file = env_file or _default_env_file(environment)
+    env_file_overrides = _env_file_overrides(runtime_env_file)
+    env_file_overrides.update(
+        {
+            "environment": environment,
+            "require_live_integrations": live_requested,
+        }
+    )
     settings = Settings(
         _env_file=runtime_env_file if runtime_env_file.exists() else ".env",
-        environment=environment,
-        require_live_integrations=live_requested,
+        **env_file_overrides,
     )
     runtime_issues = settings.production_readiness_issues()
     evidence = validate_manifest(evidence_manifest)
@@ -70,6 +78,19 @@ def build_gate(
         "blocking_reasons": blocking_reasons,
         "go_live_allowed": allowed,
     }
+
+
+def _env_file_overrides(env_file: Path) -> dict[str, str]:
+    if not env_file.exists():
+        return {}
+    values = dotenv_values(env_file)
+    overrides: dict[str, str] = {}
+    for field_name in Settings.model_fields:
+        env_name = field_name.upper()
+        value = values.get(env_name)
+        if value is not None:
+            overrides[field_name] = value
+    return overrides
 
 
 def _release_intent_matches(manifest: dict[str, object], environment: str, live_requested: bool) -> bool:
