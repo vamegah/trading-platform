@@ -94,17 +94,17 @@ resource "aws_db_instance" "postgres" {
 }
 
 resource "aws_elasticache_replication_group" "redis" {
-  count                         = local.aws_enabled ? 1 : 0
-  replication_group_id          = "trading-platform-${var.environment}"
-  description                   = "Trading platform Redis/event bus"
-  engine                        = "redis"
-  node_type                     = var.environment == "production" ? "cache.r7g.large" : "cache.t4g.medium"
-  num_cache_clusters            = var.environment == "production" ? 3 : 1
-  automatic_failover_enabled    = var.environment == "production"
-  transit_encryption_enabled    = true
-  at_rest_encryption_enabled    = true
-  kms_key_id                    = aws_kms_key.platform[0].arn
-  tags                          = local.common_tags
+  count                      = local.aws_enabled ? 1 : 0
+  replication_group_id       = "trading-platform-${var.environment}"
+  description                = "Trading platform Redis/event bus"
+  engine                     = "redis"
+  node_type                  = var.environment == "production" ? "cache.r7g.large" : "cache.t4g.medium"
+  num_cache_clusters         = var.environment == "production" ? 3 : 1
+  automatic_failover_enabled = var.environment == "production"
+  transit_encryption_enabled = true
+  at_rest_encryption_enabled = true
+  kms_key_id                 = aws_kms_key.platform[0].arn
+  tags                       = local.common_tags
 }
 
 output "aws_blueprint" {
