@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@tradingview/lightweight-charts": "npm:lightweight-charts@^5.2.0",
-    "@vitejs/plugin-react": "^5.0.0",
+    "@vitejs/plugin-react": "^6.0.3",
     "lightweight-charts": "^5.2.0",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
