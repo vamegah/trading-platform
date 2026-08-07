@@ -9,7 +9,7 @@
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "vite": "^7.0.0"
+    "vite": "^8.2.0"
   },
   "scripts": {
     "start": "vite --host 0.0.0.0",
