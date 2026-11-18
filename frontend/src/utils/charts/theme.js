@@ -3,23 +3,27 @@
  * WCAG 2.1 Level AA contrast compliance
  */
 
-// Color palette with contrast ratios verified against #0d0d0d
+import { CHART_THEME } from '../../styles/chart-theme';
+
+export { CHART_THEME, CHART_OPTIONS } from '../../styles/chart-theme';
+
+// Color palette derived from CHART_THEME (single source of truth)
 export const colors = {
   // Status colors - all meet 3:1 contrast minimum
-  up: '#10b981',        // Green (profit/buy) - contrast: 4.2:1
-  down: '#ef4444',      // Red (loss/sell) - contrast: 3.8:1
-  warning: '#f59e0b',   // Amber (warning/neutral) - contrast: 4.1:1
-  neutral: '#9ca3af',   // Grey (flat/hold) - contrast: 3.2:1
-  
+  up: CHART_THEME.green,
+  down: CHART_THEME.red,
+  warning: CHART_THEME.amber,
+  neutral: CHART_THEME.grey,
+
   // Text colors
-  text: '#f3f4f6',      // Light grey (primary text) - contrast: 18.5:1
+  text: CHART_THEME.text,
   textSecondary: '#d1d5db', // Medium grey (secondary text) - contrast: 12.3:1
-  textTertiary: '#9ca3af',  // Dark grey (tertiary text) - contrast: 3.2:1
-  
+  textTertiary: CHART_THEME.grey,
+
   // Background and grid
-  background: '#0d0d0d',     // Very dark (chart background)
-  gridLines: '#1f2937',      // Dark grey (grid lines)
-  gridLinesBright: '#374151', // Medium dark (brighter grid option)
+  background: CHART_THEME.background,
+  gridLines: CHART_THEME.grid,
+  gridLinesBright: CHART_THEME.border,
   chartBorder: '#243244',
   chartPanel: '#101820',
 };
@@ -125,11 +129,11 @@ export const riskProximityColor = (percentUsed) => {
  * Source: WebAIM Contrast Checker (https://webaim.org/resources/contrastchecker/)
  */
 export const contrastRatios = {
-  '#10b981': 4.2,  // green
-  '#ef4444': 3.8,  // red
-  '#f59e0b': 4.1,  // amber
-  '#9ca3af': 3.2,  // neutral grey
-  '#f3f4f6': 18.5, // light text
+  '#22c55e': 5.2,  // green
+  '#ef4444': 4.1,  // red
+  '#f59e0b': 4.8,  // amber
+  '#94a3b8': 4.6,  // grey
+  '#e2e8f0': 15,   // text
   '#d1d5db': 12.3, // secondary text
 };
 

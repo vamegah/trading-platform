@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pytest
 
 from backend.data_pipeline.cleaning.data_quality import quality_gate_or_raise, validate_rows
@@ -14,7 +16,7 @@ async def test_ingestion_to_feature_publication_flow_is_reproducible() -> None:
             {"ev": "Q", "sym": "ignored", "p": 1},
         ]
     )
-    quality = validate_rows(ticks)
+    quality = validate_rows(ticks, as_of=datetime(2026, 5, 15, 15, 0, tzinfo=timezone.utc))
     raw = write_raw_dataset("ticks", ticks, version="test-v1", source="polygon_stream")
     features = publish_features(
         "intraday_signal_features",

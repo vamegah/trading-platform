@@ -1,0 +1,20 @@
+.agent-score-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+.agent-score-chart__label,
+.agent-score-chart__value {
+  fill: #e2e8f0;
+  font-size: 12px;
+}
+
+.agent-score-chart__value {
+  font-weight: 700;
+}
+
+.agent-score-chart__track {
+  fill: #1e293b;
+}

@@ -1,0 +1,11 @@
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: var(--chart-height, 260px);
+  min-height: 0;
+  background: #0d0d0d;
+}
+
+.chart-container--fixed-width {
+  width: var(--chart-width);
+}

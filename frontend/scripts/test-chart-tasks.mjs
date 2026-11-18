@@ -118,7 +118,7 @@ assertContains('src/index.css', /\.sr-only/, 'Hidden chart data tables must be a
 assertContains('src/components/Charts/ChartDataTable.jsx', /className="sr-only"/, 'ChartDataTable must render hidden data tables');
 
 const theme = read('src/utils/charts/theme.js');
-for (const color of ['#10b981', '#ef4444', '#f59e0b', '#9ca3af', '#f3f4f6']) {
+for (const color of ['#22c55e', '#ef4444', '#f59e0b', '#94a3b8', '#e2e8f0']) {
   assert.ok(contrastRatio('#0d0d0d', color) >= 3, `${color} must meet 3:1 contrast against chart background`);
   assert.ok(theme.includes(color), `${color} must be documented in theme.js`);
 }

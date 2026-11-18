@@ -46,11 +46,11 @@ function check(name, passed, details = {}) {
 const theme = read('src/utils/charts/theme.js');
 const css = read('src/index.css');
 const palette = {
-  up: '#10b981',
+  up: '#22c55e',
   down: '#ef4444',
   warning: '#f59e0b',
-  neutral: '#9ca3af',
-  text: '#f3f4f6',
+  neutral: '#94a3b8',
+  text: '#e2e8f0',
   textSecondary: '#d1d5db',
 };
 

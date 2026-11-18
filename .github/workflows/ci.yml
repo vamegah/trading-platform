@@ -201,6 +201,8 @@ jobs:
           image-ref: trading-platform-backend:${{ github.sha }}
           severity: HIGH,CRITICAL
           exit-code: "1"
+          # Skip OS CVEs with no Debian fix available; fixable HIGH/CRITICAL findings still fail.
+          ignore-unfixed: true
       - name: Scan frontend image
         uses: aquasecurity/trivy-action@v0.36.0
         with:

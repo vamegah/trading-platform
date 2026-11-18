@@ -154,7 +154,7 @@ def test_security_assessment_validator_blocks_findings_without_acceptance(tmp_pa
         {
             "security_owner": "security",
             "engineering_owner": "engineering",
-            "expiration_date": "2026-06-15",
+            "expiration_date": "2099-12-31",
         }
     ]
     assessment.write_text(json.dumps(payload), encoding="utf-8")
