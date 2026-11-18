@@ -9,7 +9,9 @@ ARG VITE_API_BASE_URL=http://localhost:8000
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build
 
-FROM nginx:1.27-alpine
+FROM nginx:1.30-alpine
+
+RUN apk upgrade --no-cache
 
 COPY infrastructure/docker/frontend-nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
