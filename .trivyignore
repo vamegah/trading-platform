@@ -1,0 +1,5 @@
+# Unfixed Debian util-linux CVE in the backend base image.
+# Affects bsdutils, libblkid1, libmount1, libuuid1, login, mount, etc.
+# No fixed version exists in Debian yet. Added 2026-11-18 (see PR #27).
+# Remove this entry once Debian ships a fix.
+CVE-2026-76642
