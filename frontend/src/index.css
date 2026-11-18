@@ -834,6 +834,234 @@ th {
   padding: 0.7rem 0;
 }
 
+.portfolio-advisor {
+  max-width: 1120px;
+  width: 100%;
+}
+
+.advisor-request,
+.advisor-job-status,
+.advisor-report,
+.advisor-retirement,
+.advisor-charts > .panel {
+  border-top: 3px solid #1f6f78;
+}
+
+.advisor-consent {
+  background: #f0f7f6;
+  border: 1px solid #c7dfdb;
+  border-radius: 6px;
+  margin: 1rem 0;
+  padding: 0.75rem;
+}
+
+.advisor-llm-report {
+  color: #334155;
+  font: inherit;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.research-snapshot {
+  border-top: 1px solid #edf2f7;
+  margin-top: 0.8rem;
+  padding-top: 0.75rem;
+}
+
+.research-snapshot header {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.research-snapshot header span,
+.research-snapshot li {
+  color: #64748b;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.research-snapshot p {
+  color: #334155;
+  line-height: 1.5;
+}
+
+.research-snapshot ul {
+  display: grid;
+  gap: 0.4rem;
+  padding-left: 1.2rem;
+}
+
+.research-snapshot a {
+  color: #176b66;
+}
+
+.advisor-retirement-narrative {
+  border-top: 1px solid #edf2f7;
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+}
+
+.advisor-retirement-narrative h3 {
+  font-size: 0.9rem;
+}
+
+.advisor-retirement-narrative pre {
+  color: #334155;
+  font: inherit;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.advisor-request h2,
+.advisor-report h2,
+.advisor-retirement h2,
+.advisor-charts h2 {
+  font-size: 1.05rem;
+  margin: 0.25rem 0 0;
+}
+
+.advisor-form-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0.75rem 0;
+}
+
+.advisor-check {
+  align-items: center;
+  display: flex;
+  gap: 0.55rem;
+}
+
+.advisor-check input {
+  accent-color: #1f6f78;
+  height: 1rem;
+  width: 1rem;
+}
+
+.advisor-assumptions {
+  border: 1px solid #d7e0e4;
+  border-radius: 6px;
+  margin: 1rem 0;
+  padding: 0.75rem;
+}
+
+.advisor-assumptions legend {
+  color: #344955;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0 0.35rem;
+}
+
+.advisor-allocation-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.advisor-disclosure {
+  border-left: 3px solid #d97706;
+  color: #475569;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin: 1rem 0 0;
+  padding-left: 0.7rem;
+}
+
+.advisor-source-meta {
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.advisor-error {
+  color: #b91c1c;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.advisor-job-status {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.advisor-job-status strong {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+.advisor-observations {
+  line-height: 1.6;
+  padding-left: 1.25rem;
+}
+
+.advisor-warnings {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  color: #7c2d12;
+  padding: 0.7rem;
+}
+
+.advisor-warnings h3 {
+  font-size: 0.9rem;
+  margin: 0.2rem 0 0.5rem;
+}
+
+.advisor-bar-row {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.9rem 0;
+}
+
+.advisor-bar-label {
+  display: flex;
+  justify-content: space-between;
+}
+
+.advisor-success-rate {
+  align-items: center;
+  background: #eff8f4;
+  border-left: 4px solid #15803d;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.8rem;
+}
+
+.advisor-success-rate strong {
+  color: #166534;
+  font-size: 1.5rem;
+}
+
+.advisor-percentiles > div {
+  border-top: 1px solid #edf2f7;
+  padding-top: 0.7rem;
+}
+
+.advisor-percentiles strong {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.advisor-retirement pre {
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 720px) {
+  .advisor-form-grid,
+  .advisor-allocation-grid,
+  .advisor-percentiles {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 920px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -893,4 +1121,43 @@ th {
     align-items: stretch;
     flex-direction: column;
   }
+}
+
+.chart-placeholder {
+  animation: shimmer 1.4s infinite;
+  background: linear-gradient(90deg, #1e293b 25%, #253041 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  border-radius: 8px;
+  min-height: 220px;
+  width: 100%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.chart-empty {
+  min-height: 220px;
+}
+
+.chart-error {
+  align-items: center;
+  background: #0d0d0d;
+  border: 1px solid #7f1d1d;
+  border-radius: 8px;
+  color: #fca5a5;
+  display: flex;
+  font-size: 0.86rem;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 220px;
+  padding: 1rem;
+  text-align: center;
+  width: 100%;
 }
