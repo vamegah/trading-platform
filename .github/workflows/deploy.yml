@@ -116,7 +116,7 @@ jobs:
       - name: Generate production change log
         run: git log -1 --pretty=format:"%H %s" > "change-log-${{ inputs.environment }}.txt"
       - name: Attest release evidence
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: release-candidate-${{ inputs.environment }}.json
       - name: Upload release evidence
