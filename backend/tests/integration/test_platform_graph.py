@@ -7,7 +7,20 @@ from backend.ml_training.train_pipeline import train
 
 @pytest.mark.asyncio
 async def test_platform_graph_edges_exist() -> None:
-    routes = {route.path for route in app.routes}
+    def collect_paths(routes, prefix=""):
+        paths = set()
+        for route in routes:
+            if hasattr(route, "include_context"):
+                ctx = route.include_context
+                mount_prefix = getattr(ctx, "prefix", "")
+                sub_routes = getattr(ctx, "included_router", None)
+                if sub_routes and hasattr(sub_routes, "routes"):
+                    paths.update(collect_paths(sub_routes.routes, mount_prefix))
+            elif hasattr(route, "path"):
+                paths.add(prefix + route.path)
+        return paths
+
+    routes = collect_paths(app.routes)
     assert "/api/auth/login" in routes
     assert "/portfolio/summary" in routes
     assert "/execution/orders" in routes
