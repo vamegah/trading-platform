@@ -182,6 +182,30 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
     - Watch main workflows with `gh run watch <run-id>` until each finishes. Fix failures through a new unit of work.
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10, 11.11, 11.12, 11.13, 11.14_
 
+- [ ] 9. Restore automatic deploy triggers
+  - [ ] 9.1 Switch the deploy workflows back from manual-only to their original triggers
+    - Background: after PR #29 the deploy workflows failed on every push to `main`, so they were made manual-only (`workflow_dispatch`) on branch `fix/deploy-workflows-manual-dispatch`. Do this task only after tasks 1-8 are complete.
+    - Prerequisites (check each before changing triggers):
+      - Task 8 has merged, so the Lambda zips land where Terraform expects them.
+      - `terraform-apply.yml` points at a Terraform folder that exists. It currently uses `infrastructure/terraform/envs/<environment>`, which is not in the repo; create those environment roots or point it at the numbered stacks.
+      - The repository secrets used by the workflows are set: `AWS_DEPLOY_ROLE_ARN`, `TFVARS_STAGING`, `TFVARS_PROD`, `CLERK_PUBLISHABLE_KEY_STAGING`, `CLERK_PUBLISHABLE_KEY_PROD`.
+      - The GitHub environments `staging` and `prod` exist, with required reviewers on `prod`.
+      - `deploy-staging` and `deploy-production` have each completed one successful manual run from the Actions tab.
+    - In `.github/workflows/deploy-staging.yml`, restore `push: branches: [main]` alongside `workflow_dispatch`.
+    - In `.github/workflows/deploy-production.yml`, restore `push: tags: ["v*.*.*"]` alongside `workflow_dispatch`, keeping the `guard` confirmation and the `m10-gate` go-live gate before `build`.
+    - Remove the "Manual only" comments from both files. Leave `deploy.yml` as `workflow_dispatch` only; it was manual before PR #29.
+    - Verify: `actionlint` passes on all workflows; after merge, the push to `main` starts `deploy-staging` and it finishes green. Production runs only when a `v*.*.*` tag is pushed.
+    - _Requirements: none in requirements.md (CI/CD follow-up outside the chart scope)_
+
+  - [ ] 9.2 Deliver via branch, PR, and passing workflows
+    - Start only after 9.1 prerequisites are met. Run `git fetch origin`, `git checkout main`, `git pull --ff-only origin main`, then `git checkout -b ci/t9-restore-deploy-triggers`. Commit the work from 9.1.
+    - Push with `git push -u origin <branch>`, open the PR with `gh pr create --base main --head <branch>`, and run `gh pr checks <pr> --watch`.
+    - Fix failing checks with new commits and no force push or bypass. Stop and report after 3 consecutive failures of the same check.
+    - Resolve any conflicts on the branch by merging `origin/main`, keeping others' changes.
+    - Merge with `gh pr merge <pr> --squash` only when all checks pass. Update local `main` with `git checkout main`, `git fetch origin`, `git merge --ff-only origin/main`.
+    - This merge triggers `deploy-staging`. Watch it with `gh run watch <run-id>` until it finishes, and fix failures through a new unit of work.
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10, 11.11, 11.12, 11.13, 11.14_
+
 ## Notes
 
 - Tasks marked with `*` are optional and can be skipped for a faster MVP.
@@ -191,6 +215,7 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
 - Delivery tasks (2.7, 4.8, 5.3) and final verification (7.1) are required, not optional. Optional test tasks (2.6, 5.2) are included in the delivery when they were done.
 - Delivery follows Requirement 11. Never use force push, `--no-verify`, or bypass required checks.
 - Task 8 is an infrastructure follow-up outside the chart scope. It touches CI scripts and Terraform only, and no frontend code.
+- Task 9 restores the automatic deploy triggers that were switched to manual-only after PR #29. It runs last, after tasks 1-8.
 
 ## Task Dependency Graph
 
@@ -207,9 +232,12 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
     { "id": 7, "tasks": ["5.1"] },
     { "id": 8, "tasks": ["5.2"] },
     { "id": 9, "tasks": ["5.3"] },
-    { "id": 10, "tasks": ["7.1"] },
-    { "id": 11, "tasks": ["8.1"] },
-    { "id": 12, "tasks": ["8.2"] }
+    { "id": 10, "tasks": ["6"] },
+    { "id": 11, "tasks": ["7.1"] },
+    { "id": 12, "tasks": ["8.1"] },
+    { "id": 13, "tasks": ["8.2"] },
+    { "id": 14, "tasks": ["9.1"] },
+    { "id": 15, "tasks": ["9.2"] }
   ]
 }
 ```

@@ -15,6 +15,16 @@ on:
       tfvars_secret:
         required: true
         type: string
+    outputs:
+      api_endpoint:
+        description: API endpoint from terraform output
+        value: ${{ jobs.apply.outputs.api_endpoint }}
+      frontend_bucket:
+        description: Frontend S3 bucket from terraform output
+        value: ${{ jobs.apply.outputs.frontend_bucket }}
+      cloudfront_distribution_id:
+        description: CloudFront distribution ID from terraform output
+        value: ${{ jobs.apply.outputs.cloudfront_distribution_id }}
 
 permissions:
   id-token: write
@@ -33,6 +43,10 @@ jobs:
   apply:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    outputs:
+      api_endpoint: ${{ steps.outputs.outputs.api_endpoint }}
+      frontend_bucket: ${{ steps.outputs.outputs.frontend_bucket }}
+      cloudfront_distribution_id: ${{ steps.outputs.outputs.cloudfront_distribution_id }}
 
     steps:
       - uses: actions/checkout@v4
