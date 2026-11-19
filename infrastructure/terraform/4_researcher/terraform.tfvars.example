@@ -1,0 +1,52 @@
+# Part 4: Researcher Agent Configuration
+# Copy this file to terraform.tfvars and update with your values.
+
+# Your AWS region for ECR and Lambda
+aws_region = "us-east-1"
+
+# Ingest API from Part 3 — get from: cd terraform/3_ingestion && terraform output
+alex_api_endpoint = "https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod/ingest"
+alex_api_key      = "your-api-key-here"
+
+# LLM provider — change the prefix to switch providers, no code changes needed
+researcher_model = "bedrock/us.amazon.nova-pro-v1:0"
+bedrock_region   = "us-west-2"
+
+# OpenAI API key (only required when researcher_model = "openai/...")
+openai_api_key = ""
+
+# MCP logging (set to "True" to enable verbose tool-call logging in CloudWatch)
+mcp_logging = "False"
+
+# Enable /test-model diagnostic endpoint
+researcher_enable_diagnostics = "false"
+
+# Optional news MCP server
+# news_api_command = "npx @modelcontextprotocol/server-news-api"
+# news_api_key     = ""
+
+# ---------------------------------------------------------------------------
+# Scheduler (EventBridge — runs the researcher automatically every 2 hours)
+# ---------------------------------------------------------------------------
+
+# Set to true to activate the scheduler (requires researcher_image_uri to be set)
+scheduler_enabled = false
+
+# Protect the researcher HTTP endpoints with a shared secret (recommended)
+# researcher_api_key = "a-strong-random-secret"
+
+# What type of research to run on each schedule trigger
+# Options: auto | ticker | sector | macro | topic  (default: auto)
+research_mode = "auto"
+
+# For mode=ticker: comma-separated symbols, e.g. "NVDA,MSFT,AAPL"
+# research_tickers = ""
+
+# For mode=sector: sector name, e.g. "Technology"
+# research_sector = ""
+
+# News lookback window: 24h | 7d  (default: 24h)
+research_window = "24h"
+
+# How long the scheduler Lambda waits for the researcher (seconds)
+research_timeout_seconds = 300

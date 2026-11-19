@@ -334,3 +334,85 @@ The `chart-placeholder` CSS class is added to `index.css`:
   100% { background-position: -200% 0; }
 }
 ```
+
+---
+
+## Delivery Workflow
+
+This section addresses Requirement 11. Each Unit_of_Work (one task, or a logical group of related tasks from `tasks.md`) is delivered through its own Feature_Branch and Pull_Request. The GitHub CLI (`gh`) is used for all GitHub operations (PR creation, check monitoring, merge, workflow run inspection); plain `git` is used for local operations.
+
+### Branch Naming Convention
+
+Format: `<type>/<task-ids>-<short-kebab-description>`
+
+| Part | Values |
+|------|--------|
+| `type` | `feat`, `fix`, `chore`, `docs`, `test` |
+| `task-ids` | Task number(s) from `tasks.md`, e.g. `t3` or `t3-t4` |
+| description | Short kebab-case summary |
+
+Examples: `feat/t2-chart-container`, `feat/t5-agent-score-chart`, `fix/ci-chart-lint-errors`.
+
+### Delivery Steps
+
+| Step | Action | Commands | Requirement |
+|------|--------|----------|-------------|
+| 1 | Update `main` and create the branch | `git fetch origin`, `git checkout main`, `git merge --ff-only origin/main`, `git checkout -b <branch>` | 11.1, 11.2 |
+| 2 | Implement the Unit_of_Work with commits on the branch only | `git add <files>`, `git commit` | 11.2 |
+| 3 | Push the branch | `git push -u origin <branch>` | 11.3 |
+| 4 | Open one PR targeting `main` | `gh pr create --base main --head <branch>` | 11.2, 11.5 |
+| 5 | Wait for every PR_Check to reach a final status | `gh pr checks <pr> --watch` | 11.6 |
+| 6 | Merge only when every check passed and there are no conflicts | `gh pr merge <pr> --squash` (or the repository's configured merge method) | 11.6, 11.11 |
+| 7 | Sync local `main` to remote `main` | `git checkout main`, `git fetch origin`, `git merge --ff-only origin/main` | 11.12 |
+| 8 | Monitor Main_Workflows triggered by the merge | `gh run list --branch main --limit 5`, `gh run watch <run-id>` | 11.13 |
+
+PR_Checks are the workflows in `.github/workflows` triggered by pull requests (for example `ci.yml` and `pr-validate.yml`) plus any required status checks on `main`. Main_Workflows are those triggered by a push to `main` (build and deploy workflows).
+
+### Push Failure Handling (11.4)
+
+If `git push` is rejected or fails, the Feature_Branch and its local commits are left unchanged. The failure reason is reported and no PR is opened until a push succeeds. The fix is applied with a normal fetch and merge or rebase, never a force push.
+
+### PR Check Failure Handling (11.7, 11.8, 11.9)
+
+```
+attempts = 0; lastFailedCheck = null
+loop:
+  wait until all PR_Checks have a final status
+  if all passed: break
+  failed = name of the failing check
+  attempts = (failed == lastFailedCheck) ? attempts + 1 : 1
+  lastFailedCheck = failed
+  if attempts >= 3:
+    stop; leave PR open and unmerged;
+    report check name and failure output (gh run view <run-id> --log-failed)
+    exit
+  inspect failure output, fix with a NEW commit on the Feature_Branch
+  git push            # non-force
+```
+
+Rules:
+- Fixes are always new commits pushed non-force. `--force`, `--force-with-lease`, `--no-verify`, disabling or editing git hooks, and skipping or relaxing required status checks are not used.
+- The attempt counter tracks consecutive pushes where the same check fails. A different check failing, or a passing run, resets the counter.
+- After the third consecutive failure of the same check, no further fix attempts are made. The PR stays open and unmerged, and the check name and failure output go to the project maintainer.
+
+### Merge Conflict Resolution (11.10)
+
+When the PR conflicts with `main`:
+1. `git fetch origin`
+2. Merge (`git merge origin/main`) or rebase `main` into the Feature_Branch. If a rebase would rewrite commits already pushed, use merge so the push stays non-force.
+3. Resolve each conflict so that every change already on `main` from other contributors is kept alongside this branch's changes. A conflicting hunk is never resolved by discarding the `main` side wholesale.
+4. Push non-force and wait for PR_Checks to re-run until all pass.
+
+### Post-Merge Failure Handling (11.13, 11.14)
+
+After the merge, every Main_Workflow triggered by the push to `main` is watched until it reports passed, failed, or cancelled. If one fails:
+1. Identify the failing job and its output: `gh run view <run-id> --log-failed`.
+2. Do not push directly to `main` and do not revert outside the process. Start a new Unit_of_Work (branch name such as `fix/main-<workflow>-<short-cause>`) that follows steps 1 to 8 above.
+
+### Verification Approach
+
+The Delivery Workflow is a process contract over git and GitHub, so it has no pure-function logic suited to property-based tests. It is enforced and verified through repository settings and observable state:
+- Branch protection on `main` requires the PR_Checks and disallows force pushes and direct pushes.
+- After each merge, `git rev-parse main` equals `git rev-parse origin/main`.
+- `gh pr list --state open --head <branch>` shows exactly one PR per Feature_Branch.
+- Main_Workflow run conclusions are checked with `gh run list --branch main`.

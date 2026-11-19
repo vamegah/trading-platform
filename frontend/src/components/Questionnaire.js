@@ -1,43 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { getStoredSession, evaluateSuitability } from '../services/api';
 
 const Questionnaire = () => {
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
-  const navigate = useNavigate();
-  const token = localStorage.getItem('access_token');
+  const [error, setError] = useState('');
+
+  const session = getStoredSession();
 
   useEffect(() => {
-    const fetchQuestions = async () => {
-      const res = await axios.get('/api/profile/questionnaire', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setQuestions(res.data);
-    };
-    fetchQuestions();
-  }, [token]);
+    if (!session?.accessToken) {
+      window.location.href = '/login';
+      return;
+    }
+    fetch('/api/profile/questionnaire', {
+      headers: { Authorization: `Bearer ${session.accessToken}` },
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(r.statusText)))
+      .then(setQuestions)
+      .catch(err => setError(err.message || 'Failed to load questions'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAnswer = (questionId, value) => {
-    setAnswers({ ...answers, [questionId]: value });
+    setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
-      await axios.post('/api/profile/questionnaire', { answers }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      navigate('/');
+      await evaluateSuitability({ answers });
+      window.location.href = '/';
     } catch (err) {
-      alert('Submission failed');
+      setError(err.message || 'Submission failed');
     }
   };
 
-  if (!token) {
-    navigate('/login');
-    return null;
-  }
+  if (!session?.accessToken) return null;
 
   return (
     <div>
@@ -60,6 +60,7 @@ const Questionnaire = () => {
             ))}
           </div>
         ))}
+        {error && <p role="alert">{error}</p>}
         <button type="submit">Submit</button>
       </form>
     </div>

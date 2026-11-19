@@ -1,0 +1,92 @@
+name: deploy-production
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'deploy' to confirm"
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.confirm }}" != "deploy" ]]; then
+            echo "Confirmation failed" >&2
+            exit 1
+          fi
+
+  build:
+    needs: [guard]
+    uses: ./.github/workflows/build-lambdas.yml
+    with:
+      environment: prod
+      artifacts_bucket: trading-prod-lambda-artifacts
+      aws_region: us-east-1
+    secrets: inherit
+
+  terraform:
+    needs: [build]
+    uses: ./.github/workflows/terraform-apply.yml
+    with:
+      environment: prod
+      artifacts_bucket: trading-prod-lambda-artifacts
+      aws_region: us-east-1
+      tfvars_secret: TFVARS_PROD
+    secrets: inherit
+
+  m10-gate:
+    needs: [terraform]
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v3
+      - name: Install
+        run: uv pip install --system pydantic
+      - name: Go-live gate
+        run: |
+          python -m scripts.m10.go_live_gate \
+            --environment production \
+            --evidence-manifest release_evidence.json \
+            --live-requested \
+            --fail-closed
+
+
+  frontend:
+    needs: [terraform]
+    uses: ./.github/workflows/deploy-frontend.yml
+    with:
+      environment: prod
+      aws_region: us-east-1
+      frontend_bucket: trading-prod-frontend
+      cloudfront_distribution_id: ${{ needs.terraform.outputs.cloudfront_distribution_id }}
+      clerk_publishable_key: ${{ secrets.CLERK_PUBLISHABLE_KEY_PROD }}
+      api_url: ${{ needs.terraform.outputs.api_endpoint }}
+    secrets: inherit
+
+  tag:
+    needs: [terraform, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Annotate release
+        run: |
+          git tag -a "deployed-prod-$(date +%Y%m%d%H%M)" -m "prod deploy ${GITHUB_SHA}"
+          git push origin --tags

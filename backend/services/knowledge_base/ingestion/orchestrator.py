@@ -1,8 +1,8 @@
 import asyncio
 from typing import Any
 
-from backend.data_pipeline.ingestion.news import fetch_news
-from backend.data_pipeline.ingestion.providers import (
+from backend.services.knowledge_base.ingestion.news import fetch_news
+from backend.services.knowledge_base.ingestion.providers import (
     AlphaVantageProvider,
     FinancialModelingPrepProvider,
     MarketDataProvider,

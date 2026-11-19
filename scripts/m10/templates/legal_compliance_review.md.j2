@@ -1,0 +1,14 @@
+# Legal and Compliance Review
+
+Environment: {{ environment }}
+
+| Document | Present |
+|----------|---------|
+{% for row in rows -%}
+| {{ row.document }} | {{ row.present }} |
+{% endfor %}
+
+## Sign-off
+
+- Counsel approval: `evidence/legal/counsel_approval.pdf`
+- Regulatory position: `evidence/legal/registration_position_letter.pdf`

@@ -17,7 +17,7 @@ function AlertCenter() {
     getAlerts("demo")
       .then((data) => {
         setAlerts(data.alerts || []);
-        setPreferences(data.preferences || preferences);
+        if (data.preferences) setPreferences(data.preferences);
       })
       .catch(() => setStatus("offline"));
   }, []);

@@ -1,0 +1,15 @@
+# Provider Certification
+
+Environment: {{ environment }}
+
+| Provider | Secret Present | Sandbox | Contract |
+|----------|---------------|---------|----------|
+{% for row in rows -%}
+| {{ row.provider }} | {{ row.secret_present }} | {{ row.sandbox }} | {{ row.contract_file }} |
+{% endfor %}
+
+## Failover Proof
+
+Exercise via the Chaos Engineering Experiment 1. Attach the report as
+`evidence/chaos/experiment_1_provider_outage.md` and reference it in the
+acceptance notes.

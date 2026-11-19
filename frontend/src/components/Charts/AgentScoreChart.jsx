@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { colors } from '../../utils/charts/theme';
 
@@ -30,13 +30,13 @@ function AgentScoreChart({
   const buyThreshold = thresholdRatio(thresholdBuy);
   const sellThreshold = thresholdRatio(thresholdSell);
 
-  const getColor = (value, explicitColor) => {
+  const getColor = useCallback((value, explicitColor) => {
     if (explicitColor) return explicitColor;
     const ratio = thresholdRatio(maxValue === 1 ? value : value / maxValue);
     if (ratio >= buyThreshold) return colors.up;
     if (ratio <= sellThreshold) return colors.down;
     return colors.warning;
-  };
+  }, [buyThreshold, sellThreshold, maxValue]);
 
   const rows = useMemo(
     () =>
@@ -55,7 +55,7 @@ function AgentScoreChart({
           y,
         };
       }),
-    [chartWidth, data, maxValue]
+    [chartWidth, data, maxValue, getColor]
   );
 
   if (!data.length) {

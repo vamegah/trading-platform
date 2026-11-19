@@ -1,7 +1,7 @@
 import pytest
 
-from backend.data_pipeline.ingestion.orchestrator import DataOrchestrator
-from backend.data_pipeline.ingestion.providers import AlphaVantageProvider, PolygonProvider
+from backend.services.knowledge_base.ingestion.orchestrator import DataOrchestrator
+from backend.services.knowledge_base.ingestion.providers import AlphaVantageProvider, PolygonProvider
 from backend.shared.external_api.circuit_breaker import CircuitBreaker, CircuitOpenError
 from backend.shared.external_api.router import ExternalAPIRouter
 

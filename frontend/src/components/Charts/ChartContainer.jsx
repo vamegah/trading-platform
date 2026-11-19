@@ -44,8 +44,14 @@ const ChartContainer = React.forwardRef(({
 }, ref) => {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
+  const monitoringNameRef = useRef(monitoringName);
   const [chartInstance, setChartInstance] = useState(null);
   const resizeTimeoutRef = useRef(null);
+
+  // Keep ref current so the init effect always reads the latest name.
+  useEffect(() => {
+    monitoringNameRef.current = monitoringName;
+  }, [monitoringName]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -61,7 +67,7 @@ const ChartContainer = React.forwardRef(({
       chartRef.current = chart;
       setChartInstance(chart);
       recordChartPerformance({
-        component: monitoringName,
+        component: monitoringNameRef.current,
         durationMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAt,
         metadata: {
           height,

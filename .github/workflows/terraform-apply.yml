@@ -1,0 +1,85 @@
+name: terraform-apply
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      artifacts_bucket:
+        required: true
+        type: string
+      aws_region:
+        required: true
+        type: string
+      tfvars_secret:
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: terraform-apply-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ inputs.aws_region }}
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.x"
+
+      - name: Materialise tfvars from secret
+        env:
+          TFVARS_JSON: ${{ secrets[inputs.tfvars_secret] }}
+        run: |
+          if [[ -z "$TFVARS_JSON" ]]; then
+            echo "Missing secret ${{ inputs.tfvars_secret }}" >&2
+            exit 1
+          fi
+          echo "$TFVARS_JSON" > infrastructure/terraform/envs/${{ inputs.environment }}/terraform.auto.tfvars.json
+
+      - name: Terraform init
+        working-directory: infrastructure/terraform/envs/${{ inputs.environment }}
+        run: terraform init
+
+      - name: Terraform validate
+        working-directory: infrastructure/terraform/envs/${{ inputs.environment }}
+        run: terraform validate
+
+      - name: Terraform plan
+        working-directory: infrastructure/terraform/envs/${{ inputs.environment }}
+        run: |
+          terraform plan \
+            -var="lambda_artifacts_bucket=${{ inputs.artifacts_bucket }}" \
+            -out=plan.tfplan
+
+      - name: Terraform apply
+        working-directory: infrastructure/terraform/envs/${{ inputs.environment }}
+        run: terraform apply -auto-approve plan.tfplan
+
+      - name: Capture outputs
+        id: outputs
+        working-directory: infrastructure/terraform/envs/${{ inputs.environment }}
+        run: |
+          echo "api_endpoint=$(terraform output -raw api_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "frontend_bucket=$(terraform output -raw frontend_bucket)" >> "$GITHUB_OUTPUT"
+          echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"

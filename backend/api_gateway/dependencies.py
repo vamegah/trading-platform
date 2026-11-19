@@ -10,7 +10,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 async def get_current_user(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     payload = decode_token(token)
     subject = payload.get("sub")
-    if not subject:
+    if not subject or not str(subject).isdigit():
         raise HTTPException(status_code=401, detail="Invalid token")
     user = db.query(User).filter(User.id == int(subject)).first()
     if user is None:

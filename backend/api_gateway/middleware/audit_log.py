@@ -25,7 +25,9 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
             auth_header = request.headers.get("Authorization")
             if auth_header and auth_header.startswith("Bearer "):
                 payload = decode_token(auth_header.split(" ", 1)[1])
-                user_id = payload.get("sub")
+                raw_sub = payload.get("sub")
+                if raw_sub is not None and str(raw_sub).isdigit():
+                    user_id = raw_sub
 
             details = {
                 "method": request.method,

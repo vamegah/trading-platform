@@ -1,0 +1,11 @@
+# Part 3: Ingestion Pipeline Configuration
+# Copy this file to terraform.tfvars and update with your values.
+
+# Your AWS region for the ingestion infrastructure (match DEFAULT_AWS_REGION in .env)
+aws_region = "us-east-1"
+
+# SageMaker endpoint name from Part 2 (default is "alex-embedding-endpoint")
+sagemaker_endpoint_name = "alex-embedding-endpoint"
+
+# S3 Vectors index name — leave as default unless you created a custom index
+index_name = "financial-research"

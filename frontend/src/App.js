@@ -1,31 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
-import AlertCenter from "./components/Alerts/AlertCenter";
-import BacktestViewer from "./components/BacktestViewer";
-import BehavioralNudges from "./components/BehavioralNudges";
-import { ChartFeedbackPanel } from "./components/Charts";
-import DiscoveryScanner from "./components/DiscoveryScanner";
-import ExplainabilityPanel from "./components/ExplainabilityPanel";
-import ExecutionPanel from "./components/Execution";
-import IntegrationsPanel from "./components/Integrations";
-import BlackSwanBreaker from "./components/BlackSwanBreaker";
-import BrokerageOps from "./components/BrokerageOps";
-import OneStop from "./components/OneStop";
-import PortfolioHealth from "./components/PortfolioHealth";
-import SignalFreshness from "./components/SignalFreshness";
-import StockDeepDive from "./components/StockDeepDive";
-import StressTest from "./components/StressTest";
-import TaxOptimizer from "./components/TaxOptimizer";
-import {
-  ComplianceCenter,
-  MarketReplay,
-  OptionsSuite,
-  OrderBlotter,
-  PortfolioCommandCenter,
-  StockTradeTicket,
-  TradeJournalPro,
-  TraderCopilot,
-} from "./components/TraderOS";
-import Workstation from "./components/Workstation";
+import React, { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import {
   createAccount,
   createDemoSession,
@@ -37,12 +10,44 @@ import {
 } from "./services/api";
 import "./index.css";
 
+const AlertCenter = lazy(() => import("./components/Alerts/AlertCenter"));
+const BacktestViewer = lazy(() => import("./components/BacktestViewer"));
+const BehavioralNudges = lazy(() => import("./components/BehavioralNudges"));
+const ChartFeedbackPanel = lazy(() => import("./components/Charts").then((module) => ({ default: module.ChartFeedbackPanel })));
+const DiscoveryScanner = lazy(() => import("./components/DiscoveryScanner"));
+const ExplainabilityPanel = lazy(() => import("./components/ExplainabilityPanel"));
+const ExecutionPanel = lazy(() => import("./components/Execution"));
+const IntegrationsPanel = lazy(() => import("./components/Integrations"));
+const BlackSwanBreaker = lazy(() => import("./components/BlackSwanBreaker"));
+const BrokerageOps = lazy(() => import("./components/BrokerageOps"));
+const OneStop = lazy(() => import("./components/OneStop"));
+const PortfolioHealth = lazy(() => import("./components/PortfolioHealth"));
+const PortfolioAnalysisTab = lazy(() => import("./components/PortfolioPlan/PortfolioAnalysisTab"));
+const AccountList = lazy(() => import("./components/Accounts/AccountList"));
+const AlexDashboard = lazy(() => import("./components/Dashboard"));
+const SignalFreshness = lazy(() => import("./components/SignalFreshness"));
+const StockDeepDive = lazy(() => import("./components/StockDeepDive"));
+const StressTest = lazy(() => import("./components/StressTest"));
+const TaxOptimizer = lazy(() => import("./components/TaxOptimizer"));
+const Workstation = lazy(() => import("./components/Workstation"));
+const ComplianceCenter = lazy(() => import("./components/TraderOS").then((m) => ({ default: m.ComplianceCenter })));
+const MarketReplay = lazy(() => import("./components/TraderOS").then((m) => ({ default: m.MarketReplay })));
+const OptionsSuite = lazy(() => import("./components/TraderOS").then((m) => ({ default: m.OptionsSuite })));
+const OrderBlotter = lazy(() => import("./components/TraderOS").then((m) => ({ default: m.OrderBlotter })));
+const PortfolioCommandCenter = lazy(() => import("./components/TraderOS").then((m) => ({ default: m.PortfolioCommandCenter })));
+const StockTradeTicket = lazy(() => import("./components/TraderOS").then((m) => ({ default: m.StockTradeTicket })));
+const TradeJournalPro = lazy(() => import("./components/TraderOS").then((m) => ({ default: m.TradeJournalPro })));
+const TraderCopilot = lazy(() => import("./components/TraderOS").then((m) => ({ default: m.TraderCopilot })));
+
 const tabs = [
   { id: "command", label: "Command" },
   { id: "trade", label: "Trade" },
   { id: "workstation", label: "Workstation" },
   { id: "operations", label: "Operations" },
   { id: "one-stop", label: "One Stop" },
+  { id: "portfolio-advisor", label: "Portfolio Advisor" },
+  { id: "accounts", label: "Accounts" },
+  { id: "planning-dashboard", label: "Planning" },
   { id: "blotter", label: "Blotter" },
   { id: "options", label: "Options" },
   { id: "replay", label: "Replay" },
@@ -210,6 +215,11 @@ function App() {
   const [nudges, setNudges] = useState([]);
   const [status, setStatus] = useState("idle");
 
+  const signOut = () => {
+    window.localStorage.removeItem("trading-session");
+    setSession(null);
+  };
+
   useEffect(() => {
     if (!session) return;
     window.localStorage.setItem("trading-session", JSON.stringify(session));
@@ -238,6 +248,7 @@ function App() {
         return undefined;
       })
       .catch(() => undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -253,11 +264,6 @@ function App() {
   }, [session, symbol]);
 
   const confidence = useMemo(() => Math.round((signal?.confidence || 0) * 100), [signal]);
-
-  const signOut = () => {
-    window.localStorage.removeItem("trading-session");
-    setSession(null);
-  };
 
   if (!session) {
     return <AuthGate onLogin={setSession} />;
@@ -285,7 +291,7 @@ function App() {
         <header className="topbar">
           <div>
             <p className="eyebrow">Protected research workspace</p>
-            <h1>{symbol} Research</h1>
+            <h1>{activeTab === "portfolio-advisor" ? "Portfolio Advisor" : activeTab === "accounts" ? "Accounts" : activeTab === "planning-dashboard" ? "Planning Dashboard" : `${symbol} Research`}</h1>
             <span className="session-line">{(session.roles || ["user"]).join(", ")}</span>
           </div>
           <div className="symbol-tools">
@@ -315,43 +321,50 @@ function App() {
           </article>
         </section>
 
-        {activeTab === "command" && <PortfolioCommandCenter symbol={symbol} />}
-        {activeTab === "trade" && <StockTradeTicket symbol={symbol} />}
-        {activeTab === "workstation" && <Workstation symbol={symbol} />}
-        {activeTab === "operations" && <BrokerageOps symbol={symbol} />}
-        {activeTab === "one-stop" && <OneStop symbol={symbol} />}
-        {activeTab === "blotter" && <OrderBlotter symbol={symbol} />}
-        {activeTab === "options" && <OptionsSuite symbol={symbol} />}
-        {activeTab === "replay" && <MarketReplay symbol={symbol} />}
-        {activeTab === "journal" && <TradeJournalPro symbol={symbol} />}
-        {activeTab === "copilot" && <TraderCopilot />}
-        {activeTab === "compliance-center" && <ComplianceCenter />}
-        {activeTab === "deep-dive" && (
-          <section className="analysis-grid deep-dive-grid">
-            <div className="deep-dive-primary">
-              <StockDeepDive signal={signal} symbol={symbol} />
-            </div>
-            <div className="deep-dive-sidebar">
-              <ExplainabilityPanel signal={signal} />
-              <SignalFreshness score={signal?.freshness_score || 0} signal={signal} />
-            </div>
-          </section>
-        )}
-        {activeTab === "scanner" && <DiscoveryScanner />}
-        {activeTab === "risk" && (
-          <section className="analysis-grid">
-            <PortfolioHealth />
-            <StressTest />
-            <TaxOptimizer />
-            <BlackSwanBreaker />
-          </section>
-        )}
-        {activeTab === "validation" && <BacktestViewer symbol={symbol} />}
-        {activeTab === "execution" && <ExecutionPanel symbol={symbol} />}
-        {activeTab === "alerts" && <AlertCenter />}
-        {activeTab === "integrations" && <IntegrationsPanel />}
-        {activeTab === "nudges" && <BehavioralNudges nudges={nudges} />}
-        <ChartFeedbackPanel context={activeTab} />
+        <Suspense fallback={<section className="panel view-loading" role="status">Loading workspace view...</section>}>
+          {activeTab === "command" && <PortfolioCommandCenter symbol={symbol} />}
+          {activeTab === "trade" && <StockTradeTicket symbol={symbol} />}
+          {activeTab === "workstation" && <Workstation symbol={symbol} />}
+          {activeTab === "operations" && <BrokerageOps symbol={symbol} />}
+          {activeTab === "one-stop" && <OneStop symbol={symbol} />}
+          {activeTab === "portfolio-advisor" && <PortfolioAnalysisTab />}
+          {activeTab === "accounts" && <AccountList />}
+          {activeTab === "planning-dashboard" && <AlexDashboard />}
+          {activeTab === "blotter" && <OrderBlotter symbol={symbol} />}
+          {activeTab === "options" && <OptionsSuite symbol={symbol} />}
+          {activeTab === "replay" && <MarketReplay symbol={symbol} />}
+          {activeTab === "journal" && <TradeJournalPro symbol={symbol} />}
+          {activeTab === "copilot" && <TraderCopilot />}
+          {activeTab === "compliance-center" && <ComplianceCenter />}
+          {activeTab === "deep-dive" && (
+            <section className="analysis-grid deep-dive-grid">
+              <div className="deep-dive-primary">
+                <StockDeepDive signal={signal} symbol={symbol} />
+              </div>
+              <div className="deep-dive-sidebar">
+                <ExplainabilityPanel signal={signal} />
+                <SignalFreshness score={signal?.freshness_score || 0} signal={signal} />
+              </div>
+            </section>
+          )}
+          {activeTab === "scanner" && <DiscoveryScanner />}
+          {activeTab === "risk" && (
+            <section className="analysis-grid">
+              <PortfolioHealth />
+              <StressTest />
+              <TaxOptimizer />
+              <BlackSwanBreaker />
+            </section>
+          )}
+          {activeTab === "validation" && <BacktestViewer symbol={symbol} />}
+          {activeTab === "execution" && <ExecutionPanel symbol={symbol} />}
+          {activeTab === "alerts" && <AlertCenter />}
+          {activeTab === "integrations" && <IntegrationsPanel />}
+          {activeTab === "nudges" && <BehavioralNudges nudges={nudges} />}
+        </Suspense>
+        <Suspense fallback={null}>
+          <ChartFeedbackPanel context={activeTab} />
+        </Suspense>
       </section>
     </main>
   );

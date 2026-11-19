@@ -1,0 +1,15 @@
+# Paper Trading Validation
+
+Environment: {{ environment }}
+
+Paper trades in the last {{ window_days }} days: **{{ num_trades }}**
+
+| Metric | Value |
+|--------|-------|
+| Average slippage | {{ avg_slippage }} |
+| Average commission | {{ avg_commission }} |
+
+## Attachments
+
+- Reconciliation report: `evidence/paper/reconciliation.csv`
+- Equity curve: `evidence/paper/equity_curve.png`

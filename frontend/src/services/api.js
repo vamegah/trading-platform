@@ -91,6 +91,32 @@ export async function getPortfolioSummary() {
   return request("/portfolio/summary");
 }
 
+export async function getAdvisorPortfolios() {
+  return request("/portfolio-advisor/portfolios");
+}
+
+export async function getPortfolioAdvisorConsent() {
+  return request("/portfolio-advisor/consent");
+}
+
+export async function setPortfolioAdvisorConsent(allowBedrockProcessing) {
+  return request("/portfolio-advisor/consent", {
+    method: "PUT",
+    body: JSON.stringify({ allow_bedrock_processing: allowBedrockProcessing }),
+  });
+}
+
+export async function requestPortfolioAnalysis(payload) {
+  return request("/portfolio-advisor/jobs", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getPortfolioAnalysis(jobId) {
+  return request(`/portfolio-advisor/jobs/${encodeURIComponent(jobId)}`);
+}
+
 export async function evaluateSignal(payload) {
   return request("/signals/evaluate", {
     method: "POST",
@@ -782,4 +808,90 @@ export async function testNotificationDelivery(payload) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Alex Planning API — user profile, accounts, positions, jobs
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** GET or auto-create the current user's profile. */
+export async function getAlexUser() {
+  return request("/api/user");
+}
+
+/** Update the current user's profile (display_name, retirement goals, allocation targets). */
+export async function updateAlexUser(payload) {
+  return request("/api/user", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** List all investment accounts for the current user. */
+export async function getAlexAccounts() {
+  return request("/api/accounts");
+}
+
+/** Create a new investment account. */
+export async function createAlexAccount(payload) {
+  return request("/api/accounts", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Delete an account and all its positions. */
+export async function deleteAlexAccount(accountId) {
+  return request(`/api/accounts/${encodeURIComponent(accountId)}`, {
+    method: "DELETE",
+  });
+}
+
+/** List positions for one account (response: { positions: [...] }). */
+export async function getAlexPositions(accountId) {
+  return request(`/api/accounts/${encodeURIComponent(accountId)}/positions`);
+}
+
+/** Add or update a position in an account. */
+export async function upsertAlexPosition(accountId, payload) {
+  return request(`/api/accounts/${encodeURIComponent(accountId)}/positions`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Delete a single position. */
+export async function deleteAlexPosition(accountId, symbol) {
+  return request(
+    `/api/accounts/${encodeURIComponent(accountId)}/positions/${encodeURIComponent(symbol)}`,
+    { method: "DELETE" }
+  );
+}
+
+/** List analysis jobs for the current user (response: { jobs: [...] }). */
+export async function getAlexJobs() {
+  return request("/api/jobs");
+}
+
+/** Get a single job by ID (includes report_payload, charts_payload, retirement_payload). */
+export async function getAlexJob(jobId) {
+  return request(`/api/jobs/${encodeURIComponent(jobId)}`);
+}
+
+/** Start a new portfolio analysis — returns { job_id }. */
+export async function startAlexAnalysis(payload = {}) {
+  return request("/api/analyze", {
+    method: "POST",
+    body: JSON.stringify({ analysis_type: "portfolio", options: {}, ...payload }),
+  });
+}
+
+/** Populate sample accounts/positions for the current user (dev helper). */
+export async function populateAlexTestData() {
+  return request("/api/populate-test-data", { method: "POST" });
+}
+
+/** Delete all accounts and positions for the current user. */
+export async function resetAlexAccounts() {
+  return request("/api/reset-accounts", { method: "DELETE" });
 }

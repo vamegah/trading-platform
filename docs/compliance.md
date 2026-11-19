@@ -34,6 +34,8 @@ User privacy controls support consent capture, export, and deletion request work
 
 Deletion requests are tracked and queued for identity and retention review. Audit records, legal evidence, and security logs may be retained where regulatory obligations require it; export payloads expose hashed identifiers rather than plaintext personal data.
 
+The Portfolio Advisor's optional Bedrock narrative is disabled by default and requires separate, revocable `portfolio_advisor_llm` consent. Only a minimized portfolio snapshot is sent; identity, account identifiers, and retirement assumptions are excluded, and Agents SDK tracing is disabled to prevent prompt export to a third-party trace service. Deterministic analysis remains available without this consent. Operators must review AWS model access, region/data residency, retention, and applicable disclosures before setting `PORTFOLIO_ADVISOR_LLM_ENABLED=true`.
+
 ## Regulatory Limitations
 
 The platform must not be marketed as personalized legal, tax, investment-advisory, broker-dealer, or fiduciary service without separate counsel approval and the required registrations. Live launch remains blocked until provider certification, broker certification, model validation, security assessment, privacy review, and legal/compliance approval evidence are accepted.

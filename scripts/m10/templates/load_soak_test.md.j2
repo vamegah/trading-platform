@@ -1,0 +1,14 @@
+# Load and Soak Test
+
+Environment: {{ environment }}
+
+| Metric | Value |
+|--------|-------|
+| Peak Users | {{ peak_users }} |
+| Duration | {{ duration }} |
+| P50 Latency | {{ p50 }} |
+| P95 Latency | {{ p95 }} |
+| P99 Latency | {{ p99 }} |
+| Error Rate | {{ error_rate }} |
+
+Report: `evidence/load_soak/report.html`

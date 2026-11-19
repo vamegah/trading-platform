@@ -17,6 +17,8 @@ class Topics:
     marketplace_events: str = "events.marketplace"
     personalization_commands: str = "commands.personalization"
     personalization_events: str = "events.personalization"
+    portfolio_advisor_commands: str = "commands.portfolio_advisor"
+    portfolio_advisor_events: str = "events.portfolio_advisor"
     audit_events: str = "events.audit"
 
 
@@ -44,6 +46,8 @@ class EventTypes:
     personalization_event_tracked: str = "personalization.event.tracked"
     personalization_persona_requested: str = "personalization.persona.requested"
     personalization_persona_built: str = "personalization.persona.built"
+    portfolio_advisor_requested: str = "portfolio_advisor.analysis.requested"
+    portfolio_advisor_completed: str = "portfolio_advisor.analysis.completed"
     command_failed: str = "command.failed"
 
 
@@ -60,6 +64,7 @@ CORE_EVENT_TOPOLOGY = {
             TOPICS.backtest_commands,
             TOPICS.marketplace_commands,
             TOPICS.personalization_commands,
+            TOPICS.portfolio_advisor_commands,
         ),
         "subscribes": (),
     },
@@ -90,5 +95,9 @@ CORE_EVENT_TOPOLOGY = {
     "personalization_engine": {
         "publishes": (TOPICS.personalization_events,),
         "subscribes": (TOPICS.personalization_commands,),
+    },
+    "portfolio_advisor_service": {
+        "publishes": (TOPICS.portfolio_advisor_events,),
+        "subscribes": (TOPICS.portfolio_advisor_commands,),
     },
 }

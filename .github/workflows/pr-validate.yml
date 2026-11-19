@@ -1,0 +1,119 @@
+name: pr-validate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - backend/db
+          - backend/services/portfolio_planner
+          - backend/services/agents/instrument_tagger
+          - backend/services/agents/report_writer
+          - backend/services/agents/chart_maker
+          - backend/services/agents/retirement_specialist
+          - backend/services/agents/researcher_agent
+          - backend/services/scheduler
+          - backend/services/knowledge_base/ingest
+          - backend/api_gateway
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.x"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync dependencies
+        working-directory: ${{ matrix.service }}
+        run: uv sync --frozen || uv sync
+
+      - name: Ruff
+        working-directory: ${{ matrix.service }}
+        run: |
+          if grep -q "\[tool.ruff\]" pyproject.toml 2>/dev/null || [[ -f ruff.toml ]]; then
+            uv run ruff check .
+          fi
+
+      - name: Pytest
+        working-directory: ${{ matrix.service }}
+        run: |
+          if [[ -d tests ]]; then
+            uv run pytest -q
+          fi
+
+  frontend-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci
+      - working-directory: frontend
+        run: npm run lint
+      - working-directory: frontend
+        run: npm run typecheck
+      - working-directory: frontend
+        run: npm run build
+
+  terraform-validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev, staging, prod]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.x"
+      - working-directory: infrastructure/terraform/envs/${{ matrix.env }}
+        run: terraform fmt -check -recursive
+      - working-directory: infrastructure/terraform/modules
+        run: terraform fmt -check -recursive
+
+  terraform-plan:
+    needs: [terraform-validate]
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLAN_ROLE_ARN }}
+          aws-region: us-east-1
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.x"
+      - name: Terraform plan (staging)
+        working-directory: infrastructure/terraform/envs/staging
+        env:
+          TFVARS_JSON: ${{ secrets.TFVARS_STAGING }}
+        run: |
+          echo "$TFVARS_JSON" > terraform.auto.tfvars.json
+          terraform init -backend-config="key=staging/terraform.tfstate"
+          terraform plan -lock=false -no-color -out=plan.tfplan

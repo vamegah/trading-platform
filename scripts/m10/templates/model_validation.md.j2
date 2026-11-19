@@ -1,0 +1,16 @@
+# Model Validation
+
+Environment: {{ environment }}
+
+| Model | Artifact Hash | Calibration | Drift | Explainability | Approved By |
+|-------|--------------|-------------|-------|----------------|-------------|
+{% for m in models -%}
+| {{ m.name }} | {{ m.get('artifact_hash', 'missing') }} | {{ m.get('calibration', 'missing') }} | {{ m.get('drift', 'missing') }} | {{ m.get('explainability', 'missing') }} | {{ m.get('approved_by', 'pending') }} |
+{% endfor %}
+
+## Attachments
+
+- Registry manifest: `evidence/models/registry_manifest.json`
+- Calibration plots: `evidence/models/calibration/*.png`
+- SHAP explanations: `evidence/models/shap/*.png`
+- Review board sign-off: `evidence/models/review_board.pdf`

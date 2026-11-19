@@ -3,8 +3,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from backend.data_pipeline.ingestion.orchestrator import DataOrchestrator
-from backend.data_pipeline.ingestion.providers import AlphaVantageProvider, MarketDataProvider, PolygonProvider
+from backend.services.knowledge_base.ingestion.orchestrator import DataOrchestrator
+from backend.services.knowledge_base.ingestion.providers import AlphaVantageProvider, MarketDataProvider, PolygonProvider
 from backend.services.marketplace.sandbox import build_sandbox_policy, evaluate_sandbox_violation
 from backend.shared.audit import audit_chain
 from backend.shared.external_api.circuit_breaker import CircuitBreaker

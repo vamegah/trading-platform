@@ -40,7 +40,7 @@ def validate_rows(
             if row.get("price") is None:
                 missing += 1
                 row_reasons.append("missing_price")
-            if float(row.get("price", 0) or 0) <= 0:
+            elif float(row.get("price", 0) or 0) <= 0:
                 errors += 1
                 row_reasons.append("non_positive_price")
         else:
@@ -79,10 +79,10 @@ def validate_rows(
             row_reasons.append("missing_timestamp")
             reasons.append({"row": index, "reasons": row_reasons})
             continue
-        if timestamp and timestamp > reference:
+        if timestamp > reference:
             lookahead += 1
             row_reasons.append("lookahead_timestamp")
-        if timestamp and reference - timestamp > stale_after:
+        if not is_tick and reference - timestamp > stale_after:
             stale += 1
             row_reasons.append("stale_timestamp")
         if row_reasons:

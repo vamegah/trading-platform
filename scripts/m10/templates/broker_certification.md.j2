@@ -1,0 +1,15 @@
+# Broker Certification
+
+Environment: {{ environment }}
+
+| Broker | Submit | Cancel | Reconcile | Outage | Live Approved |
+|--------|--------|--------|-----------|--------|---------------|
+{% for row in rows -%}
+| {{ row.broker }} | {{ row.sandbox_submit }} | {{ row.sandbox_cancel }} | {{ row.reconciliation }} | {{ row.outage_recovery }} | {{ row.live_approved }} |
+{% endfor %}
+
+## Evidence Attachments
+
+- Alpaca sandbox reconciliation report: `evidence/brokers/alpaca_reconciliation.csv`
+- Interactive Brokers sandbox report: `evidence/brokers/ibkr_reconciliation.csv`
+- Live credential approval emails: `evidence/brokers/live_approval.pdf`

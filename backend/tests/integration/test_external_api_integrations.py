@@ -1,4 +1,4 @@
-from backend.data_pipeline.ingestion.providers import (
+from backend.services.knowledge_base.ingestion.providers import (
     FinancialModelingPrepProvider,
     MarketDataManager,
     PolygonProvider,
