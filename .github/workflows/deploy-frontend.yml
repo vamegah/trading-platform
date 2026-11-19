@@ -15,7 +15,8 @@ on:
       cloudfront_distribution_id:
         required: true
         type: string
-      clerk_publishable_key:
+      clerk_key_secret:
+        description: Name of the repository secret holding the Clerk publishable key
         required: true
         type: string
       api_url:
@@ -58,20 +59,20 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Typecheck
+      - name: Unit tests
         working-directory: frontend
-        run: npm run typecheck
+        run: npm run test:unit
 
       - name: Build
         working-directory: frontend
         env:
           VITE_API_URL: ${{ inputs.api_url }}
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ inputs.clerk_publishable_key }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets[inputs.clerk_key_secret] }}
         run: npm run build
 
       - name: Sync to S3
         run: |
-          aws s3 sync frontend/out/ "s3://${{ inputs.frontend_bucket }}/" \
+          aws s3 sync frontend/dist/ "s3://${{ inputs.frontend_bucket }}/" \
             --delete --no-progress
 
       - name: Invalidate CloudFront

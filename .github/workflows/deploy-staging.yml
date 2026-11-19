@@ -1,8 +1,7 @@
 name: deploy-staging
 
+# Manual only: run from the Actions tab (workflow_dispatch).
 on:
-  push:
-    branches: [main]
   workflow_dispatch: {}
 
 permissions:
@@ -40,7 +39,7 @@ jobs:
       aws_region: us-east-1
       frontend_bucket: trading-staging-frontend
       cloudfront_distribution_id: ${{ needs.terraform.outputs.cloudfront_distribution_id }}
-      clerk_publishable_key: ${{ secrets.CLERK_PUBLISHABLE_KEY_STAGING }}
+      clerk_key_secret: CLERK_PUBLISHABLE_KEY_STAGING
       api_url: ${{ needs.terraform.outputs.api_endpoint }}
     secrets: inherit
 
@@ -70,7 +69,3 @@ jobs:
           echo "API failed health check" >&2
           exit 1
 
-      - name: Frontend reachable
-        run: |
-          curl -fsS "${{ needs.terraform.outputs.api_endpoint }}/health" >/dev/null
-          curl -fsS "https://${{ needs.frontend.outputs.cloudfront_domain || 'placeholder' }}" >/dev/null || true

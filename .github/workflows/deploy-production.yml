@@ -1,9 +1,7 @@
 name: deploy-production
 
+# Manual only: run from the Actions tab (workflow_dispatch).
 on:
-  push:
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
     inputs:
       confirm:
@@ -30,7 +28,7 @@ jobs:
           fi
 
   build:
-    needs: [guard]
+    needs: [guard, m10-gate]
     uses: ./.github/workflows/build-lambdas.yml
     with:
       environment: prod
@@ -48,8 +46,9 @@ jobs:
       tfvars_secret: TFVARS_PROD
     secrets: inherit
 
+  # Fail-closed go-live gate; runs before anything is built or applied.
   m10-gate:
-    needs: [terraform]
+    needs: [guard]
     runs-on: ubuntu-latest
     environment: prod
     steps:
@@ -57,17 +56,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@v3
-      - name: Install
-        run: uv pip install --system pydantic
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
       - name: Go-live gate
         run: |
-          python -m scripts.m10.go_live_gate \
+          python scripts/go_live_gate.py \
             --environment production \
+            --env-file config/prod.env \
             --evidence-manifest release_evidence.json \
             --live-requested \
             --fail-closed
-
 
   frontend:
     needs: [terraform]
@@ -77,13 +76,15 @@ jobs:
       aws_region: us-east-1
       frontend_bucket: trading-prod-frontend
       cloudfront_distribution_id: ${{ needs.terraform.outputs.cloudfront_distribution_id }}
-      clerk_publishable_key: ${{ secrets.CLERK_PUBLISHABLE_KEY_PROD }}
+      clerk_key_secret: CLERK_PUBLISHABLE_KEY_PROD
       api_url: ${{ needs.terraform.outputs.api_endpoint }}
     secrets: inherit
 
   tag:
     needs: [terraform, frontend]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Annotate release
