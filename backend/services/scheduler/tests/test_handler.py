@@ -6,14 +6,13 @@ Patches urllib.request.urlopen so no real HTTP calls are made.
 
 import json
 import os
+import sys
 import types
 import unittest
 from unittest.mock import MagicMock, patch
 
 # Provide required env var before importing the module
 os.environ.setdefault("APP_RUNNER_URL", "https://researcher.example.com")
-
-import sys
 
 # Re-import to pick up env var
 if "lambda_function" in sys.modules:
