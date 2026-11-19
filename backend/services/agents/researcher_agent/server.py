@@ -499,7 +499,7 @@ async def test_bedrock() -> dict[str, Any]:
         import boto3
 
         session = boto3.Session()
-        client = boto3.client("bedrock-runtime", region_name=AWS_REGION)
+        client = boto3.client("bedrock-runtime", region_name=AWS_REGION)  # noqa: F841
 
         try:
             bedrock_client = boto3.client("bedrock", region_name=AWS_REGION)

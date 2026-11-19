@@ -2,17 +2,14 @@
 """Simple integration test for the Planner orchestrator (mocked specialists)."""
 import json
 import os
-import subprocess
 import sys
-from pathlib import Path
 
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
 os.environ["MOCK_LAMBDAS"] = "true"
 
-from db import Database
-from schemas import JobCreate
+from db import Database  # noqa: E402
 
 
 def setup_job() -> str:

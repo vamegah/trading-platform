@@ -4,7 +4,6 @@ Run both frontend and backend locally for development.
 This script starts the NextJS frontend and FastAPI backend in parallel.
 """
 
-import os
 import sys
 import subprocess
 import signal
@@ -24,7 +23,7 @@ def cleanup(signum=None, frame=None):
         try:
             proc.terminate()
             proc.wait(timeout=5)
-        except:
+        except Exception:
             proc.kill()
     sys.exit(0)
 
@@ -126,7 +125,7 @@ def start_backend():
                 print("  ✅ Backend running at http://localhost:8000")
                 print("     API docs: http://localhost:8000/docs")
                 return proc
-        except:
+        except Exception:
             time.sleep(1)
 
     print("  ❌ Backend failed to start")
@@ -175,12 +174,12 @@ def start_frontend():
     for i in range(30):  # 30 second timeout
         if started_flag["started"] or i > 5:  # Start checking after 5 seconds
             try:
-                response = httpx.get("http://localhost:3000", timeout=1)
+                response = httpx.get("http://localhost:3000", timeout=1)  # noqa: F841
                 print("  ✅ Frontend running at http://localhost:3000")
                 return proc
             except httpx.ConnectError:
                 pass  # Server not ready yet
-            except:
+            except Exception:
                 # Any other response means server is up
                 print("  ✅ Frontend running at http://localhost:3000")
                 return proc
@@ -207,7 +206,7 @@ def monitor_processes():
         for proc in processes:
             # Check if process is still running
             if proc.poll() is not None:
-                print(f"\n⚠️  A process has stopped unexpectedly!")
+                print("\n⚠️  A process has stopped unexpectedly!")
                 cleanup()
 
             # Read any available output
@@ -215,7 +214,7 @@ def monitor_processes():
                 line = proc.stdout.readline()
                 if line:
                     print(f"[LOG] {line.strip()}")
-            except:
+            except Exception:
                 pass
 
         time.sleep(0.1)
@@ -231,14 +230,14 @@ def main():
 
     # Install httpx if needed
     try:
-        import httpx
+        import httpx  # noqa: F401
     except ImportError:
         print("\n📦 Installing httpx for health checks...")
         subprocess.run(["uv", "add", "httpx"], check=True)
 
     # Start services
-    backend_proc = start_backend()
-    frontend_proc = start_frontend()
+    backend_proc = start_backend()  # noqa: F841
+    frontend_proc = start_frontend()  # noqa: F841
 
     # Monitor processes
     try:

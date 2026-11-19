@@ -5,14 +5,13 @@ Computes portfolio allocations deterministically and uses the LLM to
 produce Recharts-compatible JSON. All dollar values come from Python;
 the LLM only chooses titles, ordering, colors, and narrative framing.
 """
-import json
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from agents.extensions.models.litellm_model import LitellmModel
 
-from templates import CHARTER_INSTRUCTIONS, create_charter_task
+from templates import create_charter_task
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

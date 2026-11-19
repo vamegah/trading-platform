@@ -2,7 +2,6 @@
 Local test: search S3 Vectors.
 Exercises filters, min_score, and the normalised score output.
 """
-import json
 import logging
 import os
 from pathlib import Path

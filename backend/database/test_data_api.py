@@ -5,13 +5,12 @@ This script verifies that Aurora Serverless v2 is properly configured with Data 
 """
 
 import boto3
-import json
 import os
 import sys
 from botocore.exceptions import ClientError
 
 sys.stdout.reconfigure(encoding="utf-8")
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 
 # Load environment variables
 load_dotenv(override=True)
@@ -32,7 +31,7 @@ def get_cluster_details(region):
     secret_arn = os.getenv('AURORA_SECRET_ARN')
     
     if cluster_arn and secret_arn:
-        print(f"📋 Using configuration from .env file")
+        print("📋 Using configuration from .env file")
         
         # Verify the cluster exists and Data API is enabled
         rds_client = boto3.client('rds', region_name=region)
@@ -104,7 +103,7 @@ def get_cluster_details(region):
         aurora_secrets.sort(key=lambda x: x.get('CreatedDate', ''), reverse=True)
         secret_arn = aurora_secrets[0]['ARN']
         
-        print(f"\n📝 Found Aurora resources. Add these to your .env file:")
+        print("\n📝 Found Aurora resources. Add these to your .env file:")
         print(f"AURORA_CLUSTER_ARN={cluster_arn}")
         print(f"AURORA_SECRET_ARN={secret_arn}")
         
@@ -148,7 +147,7 @@ def test_data_api(cluster_arn, secret_arn, region):
     """Test the Data API connection"""
     client = boto3.client('rds-data', region_name=region)
     
-    print(f"\n🔍 Testing Data API Connection")
+    print("\n🔍 Testing Data API Connection")
     print(f"   Region: {region}")
     print(f"   Cluster ARN: {cluster_arn}")
     print(f"   Secret ARN: {secret_arn}")
@@ -165,9 +164,9 @@ def test_data_api(cluster_arn, secret_arn, region):
         )
         
         if response['records']:
-            test_val = response['records'][0][0].get('longValue')
+            test_val = response['records'][0][0].get('longValue')  # noqa: F841
             server_time = response['records'][0][1].get('stringValue')
-            print(f"   ✅ Connection successful!")
+            print("   ✅ Connection successful!")
             print(f"   Server time: {server_time}")
         else:
             print("   ❌ Query executed but returned no results")
@@ -176,7 +175,7 @@ def test_data_api(cluster_arn, secret_arn, region):
         error_code = e.response['Error']['Code']
         if error_code == 'BadRequestException':
             # This might mean the database doesn't exist yet
-            print(f"   ⚠️  Database 'alex' might not exist or credentials are incorrect")
+            print("   ⚠️  Database 'alex' might not exist or credentials are incorrect")
             print(f"   Error: {e.response['Error']['Message']}")
             
             # Try without specifying database
@@ -187,9 +186,9 @@ def test_data_api(cluster_arn, secret_arn, region):
                     secretArn=secret_arn,
                     sql='SELECT current_database()'
                 )
-                print(f"   ✅ Connection successful (but 'alex' database may not exist)")
+                print("   ✅ Connection successful (but 'alex' database may not exist)")
                 return True
-            except:
+            except Exception:
                 pass
         else:
             print(f"   ❌ Error: {e}")
@@ -238,7 +237,7 @@ def test_data_api(cluster_arn, secret_arn, region):
             size_mb = size_bytes / (1024 * 1024)
             print(f"   ✅ Database size: {size_mb:.2f} MB")
             
-    except:
+    except Exception:
         pass
     
     print("\n" + "=" * 50)
@@ -282,7 +281,7 @@ def main():
         sys.exit(1)
     
     # Save connection details for other scripts
-    print(f"\n✅ Data API test successful!")
+    print("\n✅ Data API test successful!")
 
 if __name__ == "__main__":
     main()

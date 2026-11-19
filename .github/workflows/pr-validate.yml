@@ -1,41 +1,35 @@
 name: pr-validate
 
+# Checks that complement ci.yml. ci.yml already lints and tests everything that
+# installs from the root requirements.txt (api_gateway, agents, knowledge_base, ...)
+# and runs terraform fmt/validate on the infrastructure/terraform root module.
+
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  id-token: write
   contents: read
-  pull-requests: write
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
+  # Services that are standalone uv projects (own pyproject.toml + uv.lock).
   backend-tests:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         service:
-          - backend/db
-          - backend/services/portfolio_planner
-          - backend/services/agents/instrument_tagger
-          - backend/services/agents/report_writer
-          - backend/services/agents/chart_maker
-          - backend/services/agents/retirement_specialist
+          - backend/database
           - backend/services/agents/researcher_agent
           - backend/services/scheduler
-          - backend/services/knowledge_base/ingest
-          - backend/api_gateway
     steps:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v3
-        with:
-          version: "0.4.x"
 
       - uses: actions/setup-python@v5
         with:
@@ -43,77 +37,59 @@ jobs:
 
       - name: Sync dependencies
         working-directory: ${{ matrix.service }}
-        run: uv sync --frozen || uv sync
+        run: uv sync --frozen
 
       - name: Ruff
         working-directory: ${{ matrix.service }}
         run: |
           if grep -q "\[tool.ruff\]" pyproject.toml 2>/dev/null || [[ -f ruff.toml ]]; then
-            uv run ruff check .
+            uv run --with ruff ruff check .
           fi
 
       - name: Pytest
         working-directory: ${{ matrix.service }}
         run: |
           if [[ -d tests ]]; then
-            uv run pytest -q
+            uv run --with pytest pytest -q
           fi
 
   frontend-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
       - working-directory: frontend
         run: npm ci
       - working-directory: frontend
-        run: npm run lint
-      - working-directory: frontend
-        run: npm run typecheck
+        run: npm run test:unit
       - working-directory: frontend
         run: npm run build
 
+  # Numbered stacks are separate Terraform root modules; ci.yml only validates
+  # infrastructure/terraform itself.
   terraform-validate:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        env: [dev, staging, prod]
+        stack:
+          - 2_sagemaker
+          - 3_ingestion
+          - 4_researcher
+          - 5_database
+          - 6_agents
+          - 7_frontend
+          - 8_enterprise
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.9.x"
-      - working-directory: infrastructure/terraform/envs/${{ matrix.env }}
-        run: terraform fmt -check -recursive
-      - working-directory: infrastructure/terraform/modules
-        run: terraform fmt -check -recursive
-
-  terraform-plan:
-    needs: [terraform-validate]
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == github.repository
-    permissions:
-      id-token: write
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_PLAN_ROLE_ARN }}
-          aws-region: us-east-1
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.9.x"
-      - name: Terraform plan (staging)
-        working-directory: infrastructure/terraform/envs/staging
-        env:
-          TFVARS_JSON: ${{ secrets.TFVARS_STAGING }}
-        run: |
-          echo "$TFVARS_JSON" > terraform.auto.tfvars.json
-          terraform init -backend-config="key=staging/terraform.tfstate"
-          terraform plan -lock=false -no-color -out=plan.tfplan
+      - name: Terraform init
+        working-directory: infrastructure/terraform/${{ matrix.stack }}
+        run: terraform init -backend=false -input=false
+      - name: Terraform validate
+        working-directory: infrastructure/terraform/${{ matrix.stack }}
+        run: terraform validate -no-color

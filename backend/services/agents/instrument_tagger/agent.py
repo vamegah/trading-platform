@@ -138,7 +138,7 @@ async def classify_instrument(
     try:
         from agents import Agent, RunConfig, Runner  # type: ignore[import]
         from agents.extensions.models.litellm_model import LitellmModel  # type: ignore[import]
-        from litellm.exceptions import RateLimitError as _RateLimitError  # type: ignore[import]
+        from litellm.exceptions import RateLimitError as _RateLimitError  # type: ignore[import]  # noqa: F401
     except ImportError as exc:
         raise ImportError(
             "openai-agents and litellm packages are required for instrument classification. "

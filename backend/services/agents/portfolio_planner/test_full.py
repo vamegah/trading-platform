@@ -17,7 +17,7 @@ load_dotenv(override=True)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from db import Database
+from db import Database  # noqa: E402
 
 QUEUE_NAME = os.getenv("SQS_QUEUE_NAME", "trading-analysis-jobs")
 TIMEOUT_SECONDS = int(os.getenv("PLANNER_TEST_TIMEOUT", "180"))

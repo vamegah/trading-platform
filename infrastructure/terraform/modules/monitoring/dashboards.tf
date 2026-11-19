@@ -13,10 +13,10 @@ resource "aws_cloudwatch_dashboard" "ai_model_usage" {
             [".", "InvocationClientErrors", ".", ".", { stat = "Sum", label = "Client Errors" }],
             [".", "InvocationServerErrors", ".", ".", { stat = "Sum", label = "Server Errors" }]
           ]
-          view    = "timeSeries"
-          region  = var.bedrock_region
-          title   = "Bedrock Invocations (${var.bedrock_model_id})"
-          period  = 300
+          view   = "timeSeries"
+          region = var.bedrock_region
+          title  = "Bedrock Invocations (${var.bedrock_model_id})"
+          period = 300
         }
       },
       {
@@ -44,10 +44,10 @@ resource "aws_cloudwatch_dashboard" "ai_model_usage" {
             ["AWS/Bedrock", "InvocationLatency", "ModelId", var.bedrock_model_id, { stat = "Average", label = "Avg" }],
             [".", ".", ".", ".", { stat = "p99", label = "p99" }]
           ]
-          view    = "timeSeries"
-          region  = var.bedrock_region
-          title   = "Bedrock Latency"
-          period  = 300
+          view   = "timeSeries"
+          region = var.bedrock_region
+          title  = "Bedrock Latency"
+          period = 300
         }
       },
       {
@@ -60,10 +60,10 @@ resource "aws_cloudwatch_dashboard" "ai_model_usage" {
             [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"Invocation4XXErrors\" EndpointName=\"${var.sagemaker_endpoint}\" ', 'Sum')", id = "s2", label = "4XX" }],
             [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"Invocation5XXErrors\" EndpointName=\"${var.sagemaker_endpoint}\" ', 'Sum')", id = "s3", label = "5XX" }]
           ]
-          view    = "timeSeries"
-          region  = var.aws_region
-          title   = "SageMaker Embedding Endpoint"
-          period  = 300
+          view   = "timeSeries"
+          region = var.aws_region
+          title  = "SageMaker Embedding Endpoint"
+          period = 300
         }
       }
     ]

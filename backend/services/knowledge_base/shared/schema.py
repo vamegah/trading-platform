@@ -6,7 +6,7 @@ enforces idempotency (text_hash), tenancy (scope/user_id), and lifecycle
 (expires_at), all of which the trading platform relies on.
 """
 import hashlib
-from datetime import datetime, UTC
+from datetime import datetime
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field

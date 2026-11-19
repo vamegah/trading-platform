@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-from db import Database
+from db import Database  # noqa: E402
 
 FUNCTION_NAME = "trading-retirement"
 

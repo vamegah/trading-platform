@@ -9,7 +9,6 @@ This script:
 
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 
@@ -91,7 +90,7 @@ def empty_s3_bucket(bucket_name):
     ])
 
     # Delete all versions (if versioning is enabled)
-    print(f"  Deleting all object versions...")
+    print("  Deleting all object versions...")
     run_command([
         "aws", "s3api", "delete-objects",
         "--bucket", bucket_name,

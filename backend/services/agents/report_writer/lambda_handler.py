@@ -31,7 +31,13 @@ except ImportError:
 
 from db import Database
 from templates import REPORTER_INSTRUCTIONS
-from agent import ReporterContext, create_agent
+from agent import (
+    BEDROCK_MODEL_ID,
+    SAGEMAKER_ENDPOINT,
+    VECTOR_BUCKET,
+    ReporterContext,
+    create_agent,
+)
 from judge import evaluate
 from observability import observe
 
@@ -231,7 +237,6 @@ def health_check() -> Dict[str, Any]:
 
 # Local smoke test
 if __name__ == "__main__":
-    from schemas import JobCreate
 
     db = Database()
     job_id = db.jobs.create_job(

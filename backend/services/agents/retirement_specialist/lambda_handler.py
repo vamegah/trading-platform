@@ -26,7 +26,7 @@ except ImportError:
 
 from db import Database
 from templates import RETIREMENT_INSTRUCTIONS
-from agent import create_agent
+from agent import BEDROCK_MODEL_ID, DEFAULT_NUM_SIMULATIONS, create_agent
 from observability import observe
 
 logger = logging.getLogger()

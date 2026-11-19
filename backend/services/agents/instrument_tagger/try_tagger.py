@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-from db import Database
+from db import Database  # noqa: E402
 
 FUNCTION_NAME = os.getenv("TAGGER_FUNCTION", "trading-tagger")
 REGION = os.getenv("DEFAULT_AWS_REGION", "us-east-1")

@@ -3,6 +3,12 @@ import json
 import os
 from typing import Any
 
+try:
+    from agents import Agent, RunConfig, Runner  # type: ignore[import]
+    from agents.extensions.models.litellm_model import LitellmModel  # type: ignore[import]
+except ImportError:  # optional dependency; checked when a report is generated
+    Agent = RunConfig = Runner = LitellmModel = None
+
 
 REPORT_INSTRUCTIONS = """Write a concise portfolio research narrative from the supplied calculated facts.
 Use only the supplied facts. Do not infer missing market data or invent company information.
@@ -89,14 +95,11 @@ async def _run_agent(
     model_id: str,
     region: str,
 ) -> str:
-    try:
-        from agents import Agent, RunConfig, Runner  # type: ignore[import]
-        from agents.extensions.models.litellm_model import LitellmModel  # type: ignore[import]
-    except ImportError as exc:
+    if Agent is None or Runner is None or RunConfig is None or LitellmModel is None:
         raise ImportError(
             "openai-agents package is required for LLM report generation. "
             "Install it with: pip install openai-agents"
-        ) from exc
+        )
     agent = Agent(
         name=name,
         instructions=instructions,

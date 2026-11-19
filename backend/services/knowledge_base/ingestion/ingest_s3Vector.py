@@ -38,7 +38,6 @@ Design notes:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import os
@@ -65,7 +64,7 @@ INDEX_NAME = os.environ.get("INDEX_NAME", "financial-research")
 MAX_EMBED_CHARS = int(os.environ.get("MAX_EMBED_CHARS", "8000"))
 MAX_CHUNKS_PER_DOC = int(os.environ.get("MAX_CHUNKS_PER_DOC", "64"))
 MAX_METADATA_BYTES = int(os.environ.get("MAX_METADATA_BYTES", "1800"))  # < 2KB S3V cap
-MAX_RETRIES = int(os.getenv_RETRIES := os.environ.get("INGEST_MAX_RETRIES", "3"), 10) if False else int(os.environ.get("INGEST_MAX_RETRIES", "3"))
+MAX_RETRIES = int(os.environ.get("INGEST_MAX_RETRIES", "3"))
 RETRY_BACKOFF_BASE = float(os.environ.get("INGEST_RETRY_BACKOFF_BASE", "0.5"))
 
 # Namespace for deterministic UUIDs (fixed, so hashes are stable across deploys)

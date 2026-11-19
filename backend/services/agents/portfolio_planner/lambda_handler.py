@@ -165,7 +165,6 @@ def health_check():
 
 # Local smoke test
 if __name__ == "__main__":
-    from schemas import JobCreate, UserCreate
 
     test_user_id = "test_user_planner_local"
     if not db.users.find_by_clerk_id(test_user_id):

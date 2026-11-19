@@ -21,7 +21,7 @@ except ImportError:
     pass
 
 from db import Database
-from agent import classification_to_db_format, tag_instruments
+from agent import BEDROCK_MODEL_ID, classification_to_db_format, tag_instruments
 from observability import observe
 
 logger = logging.getLogger()

@@ -13,7 +13,6 @@ from unittest.mock import MagicMock, patch
 # Provide required env var before importing the module
 os.environ.setdefault("APP_RUNNER_URL", "https://researcher.example.com")
 
-import importlib
 import sys
 
 # Re-import to pick up env var
@@ -22,7 +21,7 @@ if "lambda_function" in sys.modules:
 
 # Add parent dir so the import resolves
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent))
-from lambda_function import _build_payload, _post, handler  # noqa: E402
+from lambda_function import _build_payload, handler  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

@@ -3,16 +3,16 @@
 locals {
   # Every platform Lambda we want to alarm on
   platform_functions = {
-    ingest       = var.ingest_function_name
-    search       = var.search_function_name
-    researcher   = var.researcher_function_name
-    scheduler    = var.scheduler_function_name
-    planner      = var.planner_function_name
-    tagger       = var.tagger_function_name
-    reporter     = var.reporter_function_name
-    charter      = var.charter_function_name
-    retirement   = var.retirement_function_name
-    api          = var.api_function_name
+    ingest     = var.ingest_function_name
+    search     = var.search_function_name
+    researcher = var.researcher_function_name
+    scheduler  = var.scheduler_function_name
+    planner    = var.planner_function_name
+    tagger     = var.tagger_function_name
+    reporter   = var.reporter_function_name
+    charter    = var.charter_function_name
+    retirement = var.retirement_function_name
+    api        = var.api_function_name
   }
 }
 

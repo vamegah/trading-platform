@@ -8,7 +8,6 @@ Checks:
   * Contracts and SLA documents exist as files in evidence/contracts/.
 """
 import json
-import os
 from pathlib import Path
 
 import boto3

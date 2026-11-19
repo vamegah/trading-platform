@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """Simple local test for the Report Writer."""
 import json
-import os
 
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-from db import Database
-from schemas import JobCreate
-from lambda_handler import lambda_handler
+from db import Database  # noqa: E402
+from lambda_handler import lambda_handler  # noqa: E402
 
 
 def main() -> int:

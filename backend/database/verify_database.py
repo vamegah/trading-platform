@@ -17,12 +17,11 @@ Note: JSONB values are stored as floats (100.0) not strings ('100')
 import os
 import sys
 import boto3
-import json
+from datetime import UTC, datetime
 
 sys.stdout.reconfigure(encoding="utf-8")
-from pathlib import Path
-from botocore.exceptions import ClientError
-from dotenv import load_dotenv
+from botocore.exceptions import ClientError  # noqa: E402
+from dotenv import load_dotenv  # noqa: E402
 
 # Load environment variables
 load_dotenv(override=True)
@@ -239,7 +238,7 @@ def main():
         print(f"   • Real Estate ETFs:      {record[2]['longValue']:>3}")
         print(f"   • Commodity ETFs:        {record[3]['longValue']:>3}")
         print(f"   • Mixed Allocation ETFs: {record[4]['longValue']:>3}")
-        print(f"   " + "-" * 25)
+        print("   " + "-" * 25)
         print(f"   • TOTAL INSTRUMENTS:     {record[5]['longValue']:>3}")
     
     # 6. Check indexes exist

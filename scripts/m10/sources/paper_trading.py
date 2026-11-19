@@ -7,9 +7,7 @@ Queries the platform database for paper trades and computes:
   * Average slippage
   * Max drawdown during the paper period
 """
-import json
 import os
-from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import boto3

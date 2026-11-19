@@ -2,7 +2,6 @@
 Local test: ingest documents directly into S3 Vectors.
 Bypasses API Gateway, exercises the shared schema and embeddings.
 """
-import json
 import logging
 import os
 from datetime import datetime, UTC

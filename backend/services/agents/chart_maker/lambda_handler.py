@@ -32,7 +32,7 @@ except ImportError:
 
 from db import Database
 from templates import CHARTER_INSTRUCTIONS
-from agent import analyze_portfolio, create_agent
+from agent import BEDROCK_MODEL_ID, create_agent
 from observability import observe
 
 logger = logging.getLogger()

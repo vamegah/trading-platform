@@ -15,7 +15,6 @@ import subprocess
 import sys
 import os
 import json
-import time
 from pathlib import Path
 
 # On Windows, npm/node are .cmd files and need shell=True to be found
@@ -168,7 +167,7 @@ def build_frontend(api_url=None):
         print("  Make sure next.config.ts has output: 'export'")
         sys.exit(1)
 
-    print(f"  ✅ Frontend built successfully")
+    print("  ✅ Frontend built successfully")
 
 
 def deploy_terraform():
@@ -305,17 +304,17 @@ def upload_frontend(bucket_name, cloudfront_id):
         "--cache-control", "max-age=31536000,public"
     ])
 
-    print(f"  ✅ Frontend uploaded successfully")
+    print("  ✅ Frontend uploaded successfully")
 
     # Invalidate CloudFront cache
-    print(f"\n🔄 Invalidating CloudFront cache...")
-    result = run_command([
+    print("\n🔄 Invalidating CloudFront cache...")
+    result = run_command([  # noqa: F841
         "aws", "cloudfront", "create-invalidation",
         "--distribution-id", cloudfront_id,
         "--paths", "/*"
     ], capture_output=True)
 
-    print(f"  ✅ CloudFront invalidation created")
+    print("  ✅ CloudFront invalidation created")
 
 
 def display_deployment_info(outputs):
@@ -326,11 +325,11 @@ def display_deployment_info(outputs):
     api_url = outputs["api_gateway_url"]["value"]
     cloudfront_url = outputs["cloudfront_url"]["value"]
 
-    print(f"\n  ✅ Deployment successful!")
+    print("\n  ✅ Deployment successful!")
     print(f"\n  CloudFront URL: {cloudfront_url}")
     print(f"  API Gateway URL: {api_url}")
-    print(f"\n  Note: Your local .env.local file remains unchanged.")
-    print(f"  The production build uses .env.production with the AWS API URL.")
+    print("\n  Note: Your local .env.local file remains unchanged.")
+    print("  The production build uses .env.production with the AWS API URL.")
 
 
 def main():
@@ -387,9 +386,9 @@ def main():
 
     print("\n" + "=" * 50)
     print("✅ Deployment complete!")
-    print(f"\n🌐 Your application is available at:")
+    print("\n🌐 Your application is available at:")
     print(f"   {outputs['cloudfront_url']['value']}")
-    print(f"\n📊 Monitor your Lambda function at:")
+    print("\n📊 Monitor your Lambda function at:")
     print(f"   AWS Console > Lambda > {outputs['lambda_function_name']['value']}")
     print("\n⏳ Note: CloudFront distribution may take 5-10 minutes to fully propagate")
 
