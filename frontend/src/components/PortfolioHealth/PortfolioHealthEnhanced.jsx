@@ -4,11 +4,30 @@ import ChartDataTable from '../Charts/ChartDataTable';
 import ChartErrorBoundary from '../Charts/ChartErrorBoundary';
 import { calculatePositionSize, evaluatePortfolioRisk, optimizePortfolioTrade } from '../../services/api';
 import { formatCurrency } from '../../utils/charts/formatters';
-import { colors, riskProximityColor } from '../../utils/charts/theme';
+import { colors } from '../../utils/charts/theme';
+
+const RISK_PORTFOLIO = [
+  { symbol: 'MSFT', market_value: 55000, beta: 1.1, volatility: 0.018, correlation: 0.72, stop_loss_pct: 0.07 },
+  { symbol: 'SPY', market_value: 45000, beta: 1.0, volatility: 0.014, correlation: 0.72, stop_loss_pct: 0.06 },
+];
 
 function normalizeMetric(value, threshold) {
   if (!threshold) return 0;
   return Math.max(0, Math.min(100, (Math.abs(Number(value || 0)) / threshold) * 100));
+}
+
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+// Continuous green (0% of threshold) to amber (100% of threshold) scale.
+function greenToAmber(percentUsed) {
+  const t = Math.max(0, Math.min(1, percentUsed / 100));
+  const from = hexToRgb(colors.up);
+  const to = hexToRgb(colors.warning);
+  const [r, g, b] = from.map((c, i) => Math.round(c + (to[i] - c) * t));
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 function PortfolioHealth() {
@@ -19,12 +38,7 @@ function PortfolioHealth() {
 
   useEffect(() => {
     setRiskStatus('loading');
-    evaluatePortfolioRisk({
-      portfolio: [
-        { symbol: 'MSFT', market_value: 55000, beta: 1.1, volatility: 0.018, correlation: 0.72, stop_loss_pct: 0.07 },
-        { symbol: 'SPY', market_value: 45000, beta: 1.0, volatility: 0.014, correlation: 0.72, stop_loss_pct: 0.06 },
-      ],
-    })
+    evaluatePortfolioRisk({ portfolio: RISK_PORTFOLIO })
       .then((data) => {
         setRisk(data);
         setRiskStatus('ready');
@@ -62,13 +76,25 @@ function PortfolioHealth() {
   const riskMetricsData = useMemo(() => {
     if (!risk?.metrics) return [];
 
-    const portfolioEquity = Number(risk.metrics.portfolio_equity || 125000);
-    const thresholds = {
-      var: portfolioEquity * 0.02,
-      cvar: portfolioEquity * 0.03,
-      gross_exposure: portfolioEquity * 1.5,
-      net_exposure: portfolioEquity,
+    const m = risk.metrics;
+    const portfolioEquity = Number(m.portfolio_equity || risk.portfolio_value || 100000);
+    // Exposures are ratios of equity; derive them from the submitted portfolio if the API omits them.
+    const longValue = RISK_PORTFOLIO.reduce((s, p) => s + Math.max(p.market_value, 0), 0);
+    const shortValue = RISK_PORTFOLIO.reduce((s, p) => s + Math.min(p.market_value, 0), 0);
+    const values = {
+      var: m.var,
+      cvar: m.cvar,
+      gross_exposure: m.gross_exposure ?? (longValue - shortValue) / portfolioEquity,
+      net_exposure: m.net_exposure ?? (longValue + shortValue) / portfolioEquity,
     };
+    // VaR/CVaR limits are fractions of equity; exposures are compared against 1.0.
+    const thresholds = {
+      var: portfolioEquity * 0.05,
+      cvar: portfolioEquity * 0.075,
+      gross_exposure: 1,
+      net_exposure: 1,
+    };
+    const isMoney = { var: true, cvar: true, gross_exposure: false, net_exposure: false };
 
     return [
       ['VaR', 'var'],
@@ -76,13 +102,14 @@ function PortfolioHealth() {
       ['Gross exposure', 'gross_exposure'],
       ['Net exposure', 'net_exposure'],
     ].map(([label, key]) => {
-      const percentUsed = normalizeMetric(risk.metrics[key], thresholds[key]);
+      const percentUsed = normalizeMetric(values[key], thresholds[key]);
       return {
         label,
         value: percentUsed,
-        rawValue: risk.metrics[key],
+        rawValue: values[key],
         threshold: thresholds[key],
-        color: risk.kill_switch_required ? colors.down : riskProximityColor(percentUsed),
+        isMoney: isMoney[key],
+        color: risk.kill_switch_required ? colors.down : greenToAmber(percentUsed),
         displayValue: `${Math.round(percentUsed)}%`,
       };
     });
@@ -98,7 +125,7 @@ function PortfolioHealth() {
           <strong>{risk?.kill_switch_required ? 'Risk breach' : 'Balanced'}</strong>
         </div>
         <span className={risk?.kill_switch_required ? 'badge review' : 'badge healthy'}>
-          {risk?.kill_switch_required ? 'review' : 'healthy'}
+          {risk?.kill_switch_required ? 'Risk breach' : 'healthy'}
         </span>
       </header>
 
@@ -135,8 +162,8 @@ function PortfolioHealth() {
               rows={riskMetricsData.map((metric) => ({
                 id: metric.label,
                 metric: metric.label,
-                value: formatCurrency(metric.rawValue),
-                threshold: formatCurrency(metric.threshold),
+                value: metric.isMoney ? formatCurrency(metric.rawValue) : Number(metric.rawValue).toFixed(2),
+                threshold: metric.isMoney ? formatCurrency(metric.threshold) : metric.threshold.toFixed(2),
                 used: metric.displayValue,
               }))}
             />

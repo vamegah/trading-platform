@@ -74,8 +74,8 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
 - [x] 3. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Component integrations
-  - [ ] 4.1 StockDeepDive candlestick and volume chart
+- [~] 4. Component integrations
+  - [x] 4.1 StockDeepDive candlestick and volume chart
     - In `frontend/src/components/StockDeepDive/`, add `CandlestickLayer` and `VolumeLayer` (using `useChartSeries`) and render them inside `ChartContainer` wrapped in `ChartErrorBoundary`, wired through `index.js`.
     - Show at least 60 OHLCV candles. Put volume bars on a separate price scale below. Source OHLCV from the existing path in `StockDeepDiveChart.jsx` or `api.js`.
     - Add price lines for `entry_zone.low` and `entry_zone.high`, `stop_loss` (red), and `take_profit` (green) when present.
@@ -83,43 +83,43 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
     - Keep the existing text rows (Fundamentals %, Technical setup %, Sentiment %, Macro context, Entry zone, Rationale).
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
 
-  - [ ] 4.2 ExplainabilityPanel probability distribution chart
+  - [x] 4.2 ExplainabilityPanel probability distribution chart
     - In `frontend/src/components/ExplainabilityPanel/`, render the four `probability_distribution` values as a `HistogramSeries` inside `ChartContainer`, with per-bar colors green (`up_5pct_20d`), red (`down_3pct_20d`), grey (`flat_20d`), orange (`tail_loss_8pct_20d`).
     - Add an HTML legend listing each scenario name and its percentage.
     - Show a placeholder while loading, and "Distribution data unavailable" when the object is absent. Keep driver rows, key risks, and source evidence.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
-  - [ ] 4.3 ExplainabilityPanel agent score chart
+  - [x] 4.3 ExplainabilityPanel agent score chart
     - In the same panel (after 4.2, which edits the same files), render `AgentScoreChart` for `component_scores` with all seven agents: `fundamentals`, `technical`, `news_sentiment`, `macro`, `alt_data`, `debate`, `tax`.
     - Replace underscores in labels with spaces. Color bars with `scoreColor`. Show "Agent scores unavailable" when `component_scores` is absent.
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-  - [ ] 4.4 BacktestViewer equity curve chart
+  - [x] 4.4 BacktestViewer equity curve chart
     - In `frontend/src/components/BacktestViewer/`, render an `AreaSeries` from `full_walkforward_backtest.equity_curve` (at least two values). Use a green fill when the final value is above $100,000 and red otherwise.
     - Format the Y-axis in USD and show the start ($100,000) and final values as price lines or ticks.
     - Add markers from `trades`: up arrow for BUY, down arrow for SELL, positioned by time index.
     - Show a placeholder while loading, and "Equity curve data unavailable" when the curve is absent or shorter than two values. Keep all metric rows, the journal entries, and the "Paper execute" button.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
 
-  - [ ] 4.5 PortfolioHealth risk metrics bars
+  - [x] 4.5 PortfolioHealth risk metrics bars
     - In `frontend/src/components/PortfolioHealth/`, render `AgentScoreChart` bars for VaR, CVaR, gross exposure, and net exposure from `metrics`. Normalize VaR and CVaR against total portfolio equity and exposures against 1.0.
     - When `risk.kill_switch_required` is true, color all bars red and show a "Risk breach" header badge. Otherwise color each bar on a green-to-amber scale by proximity to its threshold.
     - Show a placeholder while loading and "Risk data unavailable" when the response is missing. Keep the existing text rows.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7_
 
-  - [ ] 4.6 StressTest scenario selector and comparison chart
+  - [x] 4.6 StressTest scenario selector and comparison chart
     - Create `frontend/src/components/StressTest/ScenarioSelector.js`, a dropdown populated from the `/stress-test/scenarios` endpoint, disabled while loading. Calling `runStressTest()` on change must update the chart (at least three scenarios supported).
     - Create `frontend/src/components/StressTest/StressBarChart.js`, grouped SVG bars per position: `current_value` in neutral, and `stressed_value` in red for negative `pnl` or green for positive. Label each group with `symbol` and put `pnl_percent` on the stressed bar.
     - Wire both into `StressTest/index.js` inside `ChartErrorBoundary`. Show a loading indicator on the chart area, and "Stress test data unavailable" when `positions` is empty. Keep the scenario name, total P/L, and portfolio impact rows.
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7_
 
-  - [ ] 4.7 DiscoveryScanner confidence bars and signal indicators
+  - [x] 4.7 DiscoveryScanner confidence bars and signal indicators
     - Create `frontend/src/components/DiscoveryScanner/ConfidenceBar.js`: an inline bar proportional to `confidence` (0 to 100%), green at 0.68 or above, amber from 0.55 up to 0.68, red below 0.55.
     - Create `frontend/src/components/DiscoveryScanner/SignalIndicator.js`: ▲ green for BUY, ▼ red for SELL, — grey for HOLD.
     - Use both in the result rows in `DiscoveryScanner/index.js`. Keep all columns and filters, and render the "Run a scan to rank the universe." row with no chart elements when there are no results.
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-  - [ ] 4.8 Deliver via branch, PR, and passing workflows
+  - [-] 4.8 Deliver via branch, PR, and passing workflows
     - Start only after 2.7 has merged. Run `git fetch origin`, `git checkout main`, `git pull --ff-only origin main`, then `git checkout -b feat/t4-component-chart-integrations` (or one branch per wave or component group if delivering in smaller units, such as `feat/t4-1-stock-deep-dive-chart`). Commit the work from 4.1-4.7.
     - Push with `git push -u origin <branch>`, open the PR with `gh pr create --base main --head <branch>`, and run `gh pr checks <pr> --watch`.
     - Fix failing checks with new commits and no force push or bypass. Stop and report after 3 consecutive failures of the same check.

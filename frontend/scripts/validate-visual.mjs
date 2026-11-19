@@ -8,7 +8,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const evidenceDir = join(root, 'release-evidence');
 const reportPath = join(evidenceDir, 'visual-report.json');
 
-const read = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
+const read = (relativePath) => relativePath.split('|').map((part) => readFileSync(join(root, part), 'utf8')).join('\n');
 const checks = [];
 
 function check(name, passed, details = {}) {
@@ -37,7 +37,7 @@ const chartFiles = [
   'src/components/BacktestViewer/BacktestViewerEnhanced.jsx',
   'src/components/PortfolioHealth/PortfolioHealthEnhanced.jsx',
   'src/components/StressTest/StressTestEnhanced.jsx',
-  'src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx',
+  'src/components/DiscoveryScanner/index.js',
 ];
 
 for (const file of chartFiles) {
@@ -46,7 +46,7 @@ for (const file of chartFiles) {
 
 check('agent-score-svg-responsive', /width="100%"/.test(read('src/components/Charts/AgentScoreChart.jsx')));
 check('stress-svg-responsive', /width="100%"/.test(read('src/components/StressTest/StressTestEnhanced.jsx')));
-check('scanner-confidence-svg-responsive', /viewBox="0 0 100 8"/.test(read('src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx')));
+check('scanner-confidence-svg-responsive', /viewBox="0 0 100 8"/.test(read('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js')));
 check('stock-deep-dive-text-rows-preserved', /<div className="row">/.test(read('src/components/StockDeepDive/StockDeepDiveChart.jsx')));
 check('backtest-paper-execute-preserved', /Paper execute/.test(read('src/components/BacktestViewer/BacktestViewerEnhanced.jsx')));
 

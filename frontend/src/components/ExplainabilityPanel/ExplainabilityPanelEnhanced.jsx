@@ -1,11 +1,22 @@
 import { useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import AgentScoreChart from '../Charts/AgentScoreChart';
+import AgentScoreChart, { scoreColor } from '../AgentScoreChart';
 import ChartContainer from '../Charts/ChartContainer';
 import ChartDataTable from '../Charts/ChartDataTable';
 import ChartErrorBoundary from '../Charts/ChartErrorBoundary';
+import DesignChartErrorBoundary from '../ChartErrorBoundary';
 import useChartSeries from '../../hooks/useChartSeries';
-import { formatAgentScores, probabilityScenarios } from '../../utils/charts/formatters';
+import { probabilityScenarios } from '../../utils/charts/formatters';
+
+export const AGENT_KEYS = ['fundamentals', 'technical', 'news_sentiment', 'macro', 'alt_data', 'debate', 'tax'];
+
+export function buildAgentBars(componentScores) {
+  return AGENT_KEYS.map((key) => {
+    const raw = Number(componentScores?.[key]);
+    const value = Number.isFinite(raw) ? raw : 0;
+    return { label: key.replace(/_/g, ' '), value, maxValue: 1, color: scoreColor(value) };
+  });
+}
 
 function percent(value = 0) {
   return `${Math.round(value * 100)}%`;
@@ -87,7 +98,7 @@ function ExplainabilityPanel({ signal }) {
   const attributions = explainability.feature_attributions || {};
   const tailRisk = signal?.tail_risk_summary || signal?.recommendation?.tail_risk_summary || {};
   const returnDistribution = signal?.return_distribution || signal?.recommendation?.return_distribution || {};
-  const agentData = formatAgentScores(componentScores);
+  const agentBars = buildAgentBars(componentScores);
   const hasComponentScores = Boolean(componentScores && Object.keys(componentScores).length);
   const hasProbabilityDistribution = Boolean(probabilityDist && Object.keys(probabilityDist).length);
   const isLoading = !signal;
@@ -110,32 +121,14 @@ function ExplainabilityPanel({ signal }) {
       <section className="chart-block" aria-label="Agent score chart section">
         <h4 className="chart-title">Agent Scores</h4>
         {hasComponentScores ? (
-          <ChartErrorBoundary componentName="ExplainabilityAgentScores" fallbackHeight={250}>
+          <DesignChartErrorBoundary fallback="Agent scores unavailable">
             <AgentScoreChart
-              aria-label={`Agent contribution scores: ${agentData
-                .map((item) => `${item.label} ${Math.round(item.value)}%`)
+              ariaLabel={`Agent contribution scores: ${agentBars
+                .map((item) => `${item.label} ${Math.round(item.value * 100)}%`)
                 .join(', ')}`}
-              data={agentData}
-              height={330}
-              maxValue={100}
-              thresholdBuy={0.68}
-              thresholdSell={0.38}
-              title="Agent contribution score chart"
-              width={620}
+              bars={agentBars}
             />
-            <ChartDataTable
-              caption="Agent contribution scores"
-              columns={[
-                { key: 'agent', label: 'Agent' },
-                { key: 'score', label: 'Score' },
-              ]}
-              rows={agentData.map((item) => ({
-                id: item.label,
-                agent: item.label,
-                score: `${Math.round(item.value)}%`,
-              }))}
-            />
-          </ChartErrorBoundary>
+          </DesignChartErrorBoundary>
         ) : (
           <div className="chart-empty chart-frame--compact">Agent scores unavailable</div>
         )}

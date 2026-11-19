@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const read = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
+const read = (relativePath) => relativePath.split('|').map((part) => readFileSync(join(root, part), 'utf8')).join('\n');
 const json = (relativePath) => JSON.parse(read(relativePath));
 
 function assertContains(file, pattern, message) {
@@ -75,7 +75,7 @@ const chartTaskFiles = [
   'src/components/BacktestViewer/BacktestViewerEnhanced.jsx',
   'src/components/PortfolioHealth/PortfolioHealthEnhanced.jsx',
   'src/components/StressTest/StressTestEnhanced.jsx',
-  'src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx',
+  'src/components/DiscoveryScanner/index.js',
 ];
 
 for (const file of chartTaskFiles) {
@@ -84,16 +84,16 @@ for (const file of chartTaskFiles) {
 
 assertContains('src/components/StockDeepDive/StockDeepDiveChart.jsx', /generateSampleOHLCV\(60/, 'StockDeepDive must render at least 60 OHLCV candles');
 assertContains('src/components/StockDeepDive/StockDeepDiveChart.jsx', /Price data unavailable/, 'StockDeepDive must expose empty-data fallback');
-assertContains('src/components/StockDeepDive/StockDeepDiveChart.jsx', /Entry Low/, 'StockDeepDive must create entry low line');
-assertContains('src/components/StockDeepDive/StockDeepDiveChart.jsx', /Entry High/, 'StockDeepDive must create entry high line');
-assertContains('src/components/StockDeepDive/StockDeepDiveChart.jsx', /Stop Loss/, 'StockDeepDive must create stop-loss line');
-assertContains('src/components/StockDeepDive/StockDeepDiveChart.jsx', /Take Profit/, 'StockDeepDive must create take-profit line');
+assertContains('src/components/StockDeepDive/CandlestickLayer.jsx', /Entry Low/, 'StockDeepDive must create entry low line');
+assertContains('src/components/StockDeepDive/CandlestickLayer.jsx', /Entry High/, 'StockDeepDive must create entry high line');
+assertContains('src/components/StockDeepDive/CandlestickLayer.jsx', /Stop Loss/, 'StockDeepDive must create stop-loss line');
+assertContains('src/components/StockDeepDive/CandlestickLayer.jsx', /Take Profit/, 'StockDeepDive must create take-profit line');
 
 assertContains('src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx', /ProbabilityDistributionChart/, 'Explainability must include probability chart');
 assertContains('src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx', /Distribution data unavailable/, 'Explainability must expose distribution fallback');
 assertContains('src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx', /Agent scores unavailable/, 'Explainability must expose agent score fallback');
 
-assertContains('src/components/BacktestViewer/BacktestViewerEnhanced.jsx', /setSeriesMarkers/, 'BacktestViewer must set trade markers');
+assertContains('src/components/BacktestViewer/BacktestViewerEnhanced.jsx', /createSeriesMarkers/, 'BacktestViewer must set trade markers');
 assertContains('src/components/BacktestViewer/BacktestViewerEnhanced.jsx', /arrowUp/, 'BacktestViewer must render BUY markers');
 assertContains('src/components/BacktestViewer/BacktestViewerEnhanced.jsx', /arrowDown/, 'BacktestViewer must render SELL markers');
 assertContains('src/components/BacktestViewer/BacktestViewerEnhanced.jsx', /Equity curve data unavailable/, 'BacktestViewer must expose missing equity fallback');
@@ -107,11 +107,11 @@ assertContains('src/components/StressTest/StressTestEnhanced.jsx', /getStressTes
 assertContains('src/components/StressTest/StressTestEnhanced.jsx', /Stress test data unavailable/, 'StressTest must expose empty-data fallback');
 assertNotContains('src/components/StressTest/StressTestEnhanced.jsx', /mockScenarios|In production, this would call/, 'StressTest must not use hardcoded scenario data');
 
-assertContains('src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx', /▲/, 'DiscoveryScanner must render BUY directional indicator');
-assertContains('src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx', /▼/, 'DiscoveryScanner must render SELL directional indicator');
-assertContains('src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx', /—/, 'DiscoveryScanner must render HOLD directional indicator');
-assertContains('src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx', /data-confidence-bar/, 'DiscoveryScanner must render confidence bars');
-assertContains('src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx', /Run a scan to rank the universe\./, 'DiscoveryScanner must preserve empty placeholder');
+assertContains('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js', /▲/, 'DiscoveryScanner must render BUY directional indicator');
+assertContains('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js', /▼/, 'DiscoveryScanner must render SELL directional indicator');
+assertContains('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js', /—/, 'DiscoveryScanner must render HOLD directional indicator');
+assertContains('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js', /data-confidence-bar/, 'DiscoveryScanner must render confidence bars');
+assertContains('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js', /Run a scan to rank the universe\./, 'DiscoveryScanner must preserve empty placeholder');
 
 assertContains('src/index.css', /\.chart-frame/, 'Chart sizing must be class-based');
 assertContains('src/index.css', /\.sr-only/, 'Hidden chart data tables must be available');

@@ -103,6 +103,97 @@
         "chatSessionId": "sess_bae43706-5928-4f44-8135-8bea3bd698ee",
         "timestamp": 1795047855352
       }
+    ],
+    "4.1 StockDeepDive candlestick and volume chart": [
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059311930
+      },
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059724126
+      }
+    ],
+    "4.2 ExplainabilityPanel probability distribution chart": [
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059316030
+      },
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059724642
+      }
+    ],
+    "4.4 BacktestViewer equity curve chart": [
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059319848
+      },
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059725812
+      }
+    ],
+    "4.5 PortfolioHealth risk metrics bars": [
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059320853
+      },
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059726101
+      }
+    ],
+    "4.6 StressTest scenario selector and comparison chart": [
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059321414
+      },
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059726386
+      }
+    ],
+    "4.7 DiscoveryScanner confidence bars and signal indicators": [
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059322000
+      },
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059919330
+      }
+    ],
+    "4.3 ExplainabilityPanel agent score chart": [
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059729963
+      },
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059920204
+      }
+    ],
+    "4.8 Deliver via branch, PR, and passing workflows": [
+      {
+        "executionId": "feaeab36-250a-45f8-9d76-a5111bdd18c0",
+        "chatSessionId": "sess_891d03ec-5b8c-4fb7-b479-518aaf187987",
+        "timestamp": 1795059923084
+      }
     ]
   }
 }

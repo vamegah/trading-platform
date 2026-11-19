@@ -9,7 +9,7 @@ const evidenceDir = path.join(root, 'release-evidence');
 const reportPath = path.join(evidenceDir, 'data-report.json');
 
 function read(relativePath) {
-  return fs.readFileSync(path.join(root, relativePath), 'utf8');
+  return relativePath.split('|').map((part) => fs.readFileSync(path.join(root, part), 'utf8')).join('\n');
 }
 
 function loadFormatterExports() {
@@ -105,7 +105,7 @@ check('explainability-uses-api-distribution', /probability_distribution/.test(re
 check('backtest-requires-real-equity-curve', /Equity curve data unavailable/.test(read('src/components/BacktestViewer/BacktestViewerEnhanced.jsx')));
 check('portfolio-normalizes-risk-metrics', /normalizeMetric/.test(read('src/components/PortfolioHealth/PortfolioHealthEnhanced.jsx')));
 check('stress-test-uses-scenarios-api', /getStressTestScenarios/.test(read('src/components/StressTest/StressTestEnhanced.jsx')));
-check('scanner-clamps-confidence-values', /Math\.max\(0, Math\.min\(100/.test(read('src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx')));
+check('scanner-clamps-confidence-values', /Math\.max\(0, Math\.min\(100/.test(read('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js')));
 
 const failed = checks.filter((item) => !item.passed);
 const report = {
