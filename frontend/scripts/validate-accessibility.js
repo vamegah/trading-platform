@@ -9,7 +9,7 @@ const reportPath = path.join(evidenceDir, 'accessibility-report.json');
 const minContrastRatio = 3;
 
 function read(relativePath) {
-  return fs.readFileSync(path.join(root, relativePath), 'utf8');
+  return relativePath.split('|').map((part) => fs.readFileSync(path.join(root, part), 'utf8')).join('\n');
 }
 
 function ensureEvidenceDir() {
@@ -78,7 +78,7 @@ const surfaces = [
   },
   {
     name: 'BacktestViewer',
-    file: 'src/components/BacktestViewer/BacktestViewerEnhanced.jsx',
+    file: 'src/components/BacktestViewer/BacktestViewerEnhanced.jsx|src/components/ChartContainer/index.js',
     fallback: /Equity curve data unavailable|ChartDataTable/,
     errorBoundary: true,
   },
@@ -96,7 +96,7 @@ const surfaces = [
   },
   {
     name: 'DiscoveryScanner',
-    file: 'src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx',
+    file: 'src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js',
     fallback: /Run a scan to rank the universe\./,
     errorBoundary: false,
   },
