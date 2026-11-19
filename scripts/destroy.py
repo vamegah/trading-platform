@@ -7,23 +7,32 @@ This script:
 3. Cleans up local artifacts
 """
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 
+def _resolve(cmd):
+    """Resolve the executable so Windows .cmd shims (npm) run without a shell."""
+    if isinstance(cmd, str):
+        raise TypeError("Pass commands as a list of arguments")
+    return [shutil.which(cmd[0]) or cmd[0], *cmd[1:]]
+
+
 def run_command(cmd, cwd=None, check=True, capture_output=False):
     """Run a command and optionally capture output."""
-    print(f"Running: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
+    cmd = _resolve(cmd)
+    print(f"Running: {' '.join(cmd)}")
 
     if capture_output:
-        result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, shell=isinstance(cmd, str))
+        result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
         if check and result.returncode != 0:
             print(f"Error: {result.stderr}")
             return None
         return result.stdout.strip()
     else:
-        result = subprocess.run(cmd, cwd=cwd, shell=isinstance(cmd, str))
+        result = subprocess.run(cmd, cwd=cwd)
         if check and result.returncode != 0:
             return False
         return True

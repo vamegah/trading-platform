@@ -22,6 +22,7 @@ import glob
 import json
 import logging
 import os
+import tempfile
 import threading
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -64,7 +65,7 @@ PLAYWRIGHT_BROWSER_FALLBACK = os.getenv(
     "PLAYWRIGHT_BROWSER_FALLBACK", "/ms-playwright/chromium-1208/chrome-linux64/chrome"
 )
 PLAYWRIGHT_CONFIG_PATH = os.getenv(
-    "PLAYWRIGHT_CONFIG_PATH", "/tmp/playwright-mcp.config.json"
+    "PLAYWRIGHT_CONFIG_PATH", os.path.join(tempfile.gettempdir(), "playwright-mcp.config.json")
 )
 
 # News API config (adjust to your provider — NewsAPI, Finnhub, Polygon, Benzinga, etc.)

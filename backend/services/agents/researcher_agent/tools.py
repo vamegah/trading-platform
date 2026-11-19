@@ -23,6 +23,7 @@ import hashlib
 import json
 import logging
 import os
+import tempfile
 import re
 import time
 import uuid
@@ -63,9 +64,9 @@ CB_RESET_SECONDS = float(os.getenv("ALEX_CB_RESET_SECONDS", "60"))
 
 # Fallback queue
 FALLBACK_QUEUE_DIR = Path(
-    os.getenv("ALEX_FALLBACK_QUEUE_DIR", "/tmp/alex-ingest-queue")
+    os.getenv("ALEX_FALLBACK_QUEUE_DIR", os.path.join(tempfile.gettempdir(), "alex-ingest-queue"))
 )
-FALLBACK_QUEUE_DIR.mkdir(parents=True, exist_ok=True)
+FALLBACK_QUEUE_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
 
 # Sanitizer limits
 MAX_FETCHED_CHARS = int(os.getenv("ALEX_MAX_FETCHED_CHARS", "40000"))

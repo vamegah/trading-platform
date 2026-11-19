@@ -7,6 +7,7 @@ for hot paths, and a lightweight ping() for readiness checks.
 import json
 import logging
 import os
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
@@ -27,6 +28,20 @@ except ImportError:
     pass
 
 logger = logging.getLogger(__name__)
+
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _ident(name: str) -> str:
+    """Return `name` if it is a safe SQL identifier, else raise ValueError.
+
+    Table, column and RETURNING names cannot be bound as parameters, so they
+    are interpolated into SQL. Validating them here keeps caller-supplied dict
+    keys from injecting SQL.
+    """
+    if not isinstance(name, str) or not _IDENTIFIER_RE.fullmatch(name):
+        raise ValueError(f"Invalid SQL identifier: {name!r}")
+    return name
 
 _RETRYABLE_CODES = {
     "StatementTimeoutException",
@@ -128,7 +143,8 @@ class DataAPIClient:
         return results[0] if results else None
 
     def insert(self, table: str, data: Dict, returning: Optional[str] = None) -> Optional[str]:
-        columns = list(data.keys())
+        table = _ident(table)
+        columns = [_ident(col) for col in data]
         placeholders = []
         for col in columns:
             val = data[col]
@@ -143,12 +159,13 @@ class DataAPIClient:
             else:
                 placeholders.append(f":{col}")
 
+        # Identifiers validated by _ident(); values are bound parameters.
         sql = (
-            f"INSERT INTO {table} ({', '.join(columns)}) "
+            f"INSERT INTO {table} ({', '.join(columns)}) "  # nosec B608
             f"VALUES ({', '.join(placeholders)})"
         )
         if returning:
-            sql += f" RETURNING {returning}"
+            sql += f" RETURNING {_ident(returning)}"
 
         response = self.execute(sql, self._build_parameters(data))
         if returning and response.get("records"):
@@ -162,8 +179,10 @@ class DataAPIClient:
         where: str,
         where_params: Optional[Dict] = None,
     ) -> int:
+        table = _ident(table)
         set_parts = []
         for col, val in data.items():
+            _ident(col)
             if isinstance(val, (dict, list)):
                 set_parts.append(f"{col} = :{col}::jsonb")
             elif isinstance(val, Decimal):
@@ -175,12 +194,15 @@ class DataAPIClient:
             else:
                 set_parts.append(f"{col} = :{col}")
 
-        sql = f"UPDATE {table} SET {', '.join(set_parts)} WHERE {where}"
+        # Identifiers validated by _ident(); `where` is an internal fragment
+        # whose values are bound via where_params.
+        sql = f"UPDATE {table} SET {', '.join(set_parts)} WHERE {where}"  # nosec B608
         response = self.execute(sql, self._build_parameters({**data, **(where_params or {})}))
         return response.get("numberOfRecordsUpdated", 0)
 
     def delete(self, table: str, where: str, where_params: Optional[Dict] = None) -> int:
-        sql = f"DELETE FROM {table} WHERE {where}"
+        # Table validated by _ident(); `where` values are bound via where_params.
+        sql = f"DELETE FROM {_ident(table)} WHERE {where}"  # nosec B608
         response = self.execute(sql, self._build_parameters(where_params or {}))
         return response.get("numberOfRecordsUpdated", 0)
 

@@ -6,9 +6,13 @@ Reads the report produced by k6 or Locust and confirms the SLO targets.
 import json
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-TEMPLATES = Environment(loader=FileSystemLoader(Path(__file__).parent.parent / "templates"))
+TEMPLATES = Environment(
+    loader=FileSystemLoader(Path(__file__).parent.parent / "templates"),
+    # Templates are Markdown (.md.j2); escape only if HTML/XML templates are added.
+    autoescape=select_autoescape(["html", "xml"]),
+)
 
 REPORT = Path("evidence/load_soak/report.json")
 

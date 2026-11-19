@@ -130,7 +130,7 @@ def main() -> None:
                   "trading_profiles", "trading_signals", "trades",
                   "researcher_events", "trading_audit"]:
         try:
-            count = db.query(f"SELECT COUNT(*) AS c FROM {table}")[0]["c"]
+            count = db.query(f"SELECT COUNT(*) AS c FROM {table}")[0]["c"]  # nosec B608 - table comes from a hard-coded list
             print(f"  {table}: {count}")
         except Exception:
             print(f"  {table}: (not found)")

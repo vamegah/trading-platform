@@ -4,14 +4,15 @@ Run both frontend and backend locally for development.
 This script starts the NextJS frontend and FastAPI backend in parallel.
 """
 
+import shutil
 import sys
 import subprocess
 import signal
 import time
 from pathlib import Path
 
-# On Windows, npm/node are .cmd files and need shell=True to be found
-IS_WINDOWS = sys.platform == "win32"
+# Resolve npm's full path so Windows .cmd shims run without shell=True
+NPM = shutil.which("npm") or "npm"
 
 # Track subprocesses for cleanup
 processes = []
@@ -45,7 +46,7 @@ def check_requirements():
 
     # Check npm
     try:
-        result = subprocess.run(["npm", "--version"], capture_output=True, text=True, shell=IS_WINDOWS)
+        result = subprocess.run([NPM, "--version"], capture_output=True, text=True)
         npm_version = result.stdout.strip()
         checks.append(f"✅ npm: {npm_version}")
     except FileNotFoundError:
@@ -140,17 +141,16 @@ def start_frontend():
     # Check if dependencies are installed
     if not (frontend_dir / "node_modules").exists():
         print("  Installing frontend dependencies...")
-        subprocess.run(["npm", "install"], cwd=frontend_dir, check=True, shell=IS_WINDOWS)
+        subprocess.run([NPM, "install"], cwd=frontend_dir, check=True)
 
     # Start the frontend
     proc = subprocess.Popen(
-        ["npm", "run", "dev"],
+        [NPM, "run", "dev"],
         cwd=frontend_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,  # Combine stderr with stdout
         text=True,
         bufsize=1,
-        shell=IS_WINDOWS
     )
     processes.append(proc)
 

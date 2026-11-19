@@ -33,12 +33,14 @@ if not CLUSTER_ARN or not SECRET_ARN:
 client = boto3.client("rds-data", region_name=REGION)
 
 
-def _execute(sql: str) -> None:
+def _execute(sql: str, parameters: list | None = None) -> None:
+    kwargs = {"parameters": parameters} if parameters else {}
     client.execute_statement(
         resourceArn=CLUSTER_ARN,
         secretArn=SECRET_ARN,
         database=DATABASE,
         sql=sql,
+        **kwargs,
     )
 
 
@@ -108,7 +110,10 @@ def _apply_file(path: Path) -> None:
             logger.error("  [%d] failed: %s", i, msg[:200])
             raise
 
-    _execute(f"INSERT INTO schema_migrations (version) VALUES ('{path.name}')")
+    _execute(
+        "INSERT INTO schema_migrations (version) VALUES (:version)",
+        [{"name": "version", "value": {"stringValue": path.name}}],
+    )
     logger.info("Applied %s", path.name)
 
 

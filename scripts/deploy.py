@@ -11,28 +11,33 @@ This script:
 NOTE: This script uses .env.production for deployment and does NOT modify .env.local
 """
 
+import shutil
 import subprocess
 import sys
 import os
 import json
 from pathlib import Path
 
-# On Windows, npm/node are .cmd files and need shell=True to be found
-IS_WINDOWS = sys.platform == "win32"
+def _resolve(cmd):
+    """Resolve the executable so Windows .cmd shims (npm) run without a shell."""
+    if isinstance(cmd, str):
+        raise TypeError("Pass commands as a list of arguments")
+    return [shutil.which(cmd[0]) or cmd[0], *cmd[1:]]
 
 
 def run_command(cmd, cwd=None, check=True, capture_output=False, env=None):
     """Run a command and optionally capture output."""
-    print(f"Running: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
+    cmd = _resolve(cmd)
+    print(f"Running: {' '.join(cmd)}")
 
     if capture_output:
-        result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, shell=isinstance(cmd, str), env=env)
+        result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=env)
         if check and result.returncode != 0:
             print(f"Error: {result.stderr}")
             sys.exit(1)
         return result.stdout.strip()
     else:
-        result = subprocess.run(cmd, cwd=cwd, shell=isinstance(cmd, str), env=env)
+        result = subprocess.run(cmd, cwd=cwd, env=env)
         if check and result.returncode != 0:
             sys.exit(1)
         return None
@@ -52,11 +57,7 @@ def check_prerequisites():
 
     for tool, message in tools.items():
         try:
-            use_shell = IS_WINDOWS and tool == "npm"
-            if use_shell:
-                run_command(f"{tool} --version", capture_output=True)
-            else:
-                run_command([tool, "--version"], capture_output=True)
+            run_command([tool, "--version"], capture_output=True)
             print(f"  ✅ {tool} is installed")
         except (subprocess.CalledProcessError, FileNotFoundError):
             print(f"  ❌ {message}")
@@ -116,7 +117,7 @@ def build_frontend(api_url=None):
     node_modules = frontend_dir / "node_modules"
     if not node_modules.exists():
         print("  Installing dependencies...")
-        run_command("npm install" if IS_WINDOWS else ["npm", "install"], cwd=frontend_dir)
+        run_command(["npm", "install"], cwd=frontend_dir)
 
     # If API URL is provided, create .env.production.local to override .env.local
     if api_url:
@@ -158,7 +159,7 @@ def build_frontend(api_url=None):
     # Set NODE_ENV to production to ensure .env.production is used
     build_env = os.environ.copy()
     build_env["NODE_ENV"] = "production"
-    run_command("npm run build" if IS_WINDOWS else ["npm", "run", "build"], cwd=frontend_dir, env=build_env)
+    run_command(["npm", "run", "build"], cwd=frontend_dir, env=build_env)
 
     # Verify the build
     out_dir = frontend_dir / "out"

@@ -25,6 +25,7 @@ import json
 import logging
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from typing import Any
@@ -87,6 +88,8 @@ def _post(url: str, payload: dict[str, Any]) -> tuple[int, str]:
     POST JSON to url. Returns (status_code, response_body).
     Uses only stdlib — no external dependencies in the Lambda package.
     """
+    if urllib.parse.urlsplit(url).scheme not in ("https", "http"):
+        raise ValueError(f"Refusing to POST to non-HTTP(S) URL: {url!r}")
     data = json.dumps(payload).encode("utf-8")
     headers = {"Content-Type": "application/json"}
     if RESEARCHER_API_KEY:
@@ -94,7 +97,7 @@ def _post(url: str, payload: dict[str, Any]) -> tuple[int, str]:
 
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
+        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:  # nosec B310 - scheme checked above
             return resp.status, resp.read().decode("utf-8")
     except urllib.error.HTTPError as exc:
         return exc.code, exc.read().decode("utf-8")
@@ -121,6 +124,14 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         return {
             "statusCode": 500,
             "body": json.dumps({"error": "APP_RUNNER_URL not configured"}),
+        }
+
+    if urllib.parse.urlsplit(APP_RUNNER_URL).scheme not in ("https", "http"):
+        _log("error", "config_invalid", request_id=request_id,
+             message="APP_RUNNER_URL must be an http(s) URL")
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": "APP_RUNNER_URL must be an http(s) URL"}),
         }
 
     url = f"{APP_RUNNER_URL}/research"

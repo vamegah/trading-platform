@@ -76,7 +76,7 @@ def _q(sql: str):
 
 def _count(table: str) -> int:
     try:
-        return _q(f"SELECT COUNT(*) FROM {table}")["records"][0][0]["longValue"]
+        return _q(f"SELECT COUNT(*) FROM {table}")["records"][0][0]["longValue"]  # nosec B608 - table comes from hard-coded ALL_TABLES
     except Exception:
         return -1
 

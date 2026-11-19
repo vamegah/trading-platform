@@ -18,11 +18,11 @@ class BaseModel:
             raise ValueError("table_name must be defined")
 
     def find_by_id(self, id_: Any) -> Optional[Dict]:
-        sql = f"SELECT * FROM {self.table_name} WHERE id = :id::uuid"
+        sql = f"SELECT * FROM {self.table_name} WHERE id = :id::uuid"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query_one(sql, [{"name": "id", "value": {"stringValue": str(id_)}}])
 
     def find_all(self, limit: int = 100, offset: int = 0) -> List[Dict]:
-        sql = f"SELECT * FROM {self.table_name} LIMIT :limit OFFSET :offset"
+        sql = f"SELECT * FROM {self.table_name} LIMIT :limit OFFSET :offset"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query(sql, [
             {"name": "limit", "value": {"longValue": limit}},
             {"name": "offset", "value": {"longValue": offset}},
@@ -44,7 +44,7 @@ class Users(BaseModel):
     table_name = "users"
 
     def find_by_clerk_id(self, clerk_user_id: str) -> Optional[Dict]:
-        sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :cid"
+        sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :cid"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query_one(sql, [{"name": "cid", "value": {"stringValue": clerk_user_id}}])
 
     def create_user(
@@ -70,10 +70,10 @@ class Instruments(BaseModel):
     table_name = "instruments"
 
     def find_all(self, limit: Optional[int] = None, offset: int = 0) -> List[Dict]:
-        return self.db.query(f"SELECT * FROM {self.table_name} ORDER BY symbol", [])
+        return self.db.query(f"SELECT * FROM {self.table_name} ORDER BY symbol", [])  # nosec B608 - table_name is a class constant; values are bound
 
     def find_by_symbol(self, symbol: str) -> Optional[Dict]:
-        sql = f"SELECT * FROM {self.table_name} WHERE symbol = :symbol"
+        sql = f"SELECT * FROM {self.table_name} WHERE symbol = :symbol"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query_one(sql, [{"name": "symbol", "value": {"stringValue": symbol}}])
 
     def create_instrument(self, instrument: InstrumentCreate) -> Optional[str]:
@@ -130,7 +130,7 @@ class Instruments(BaseModel):
         return None
 
     def find_by_type(self, instrument_type: str) -> List[Dict]:
-        sql = f"SELECT * FROM {self.table_name} WHERE instrument_type = :t ORDER BY symbol"
+        sql = f"SELECT * FROM {self.table_name} WHERE instrument_type = :t ORDER BY symbol"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query(sql, [{"name": "t", "value": {"stringValue": instrument_type}}])
 
     def search(self, query: str) -> List[Dict]:
@@ -138,7 +138,7 @@ class Instruments(BaseModel):
             SELECT * FROM {self.table_name}
             WHERE LOWER(symbol) LIKE LOWER(:q) OR LOWER(name) LIKE LOWER(:q)
             ORDER BY symbol LIMIT 20
-        """
+        """  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query(sql, [{"name": "q", "value": {"stringValue": f"%{query}%"}}])
 
 
@@ -148,7 +148,7 @@ class Accounts(BaseModel):
     table_name = "accounts"
 
     def find_by_user(self, clerk_user_id: str) -> List[Dict]:
-        sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :uid ORDER BY created_at DESC"
+        sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :uid ORDER BY created_at DESC"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query(sql, [{"name": "uid", "value": {"stringValue": clerk_user_id}}])
 
     def create_account(
@@ -181,7 +181,7 @@ class Positions(BaseModel):
             JOIN instruments i ON p.symbol = i.symbol
             WHERE p.account_id = :aid::uuid
             ORDER BY p.symbol
-        """
+        """  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query(sql, [{"name": "aid", "value": {"stringValue": account_id}}])
 
     def add_position(self, account_id: str, symbol: str, quantity: Decimal) -> Optional[str]:
@@ -261,13 +261,13 @@ class Jobs(BaseModel):
 
     def find_by_user(self, clerk_user_id: str, status: Optional[str] = None, limit: int = 20) -> List[Dict]:
         if status:
-            sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :uid AND status = :st ORDER BY created_at DESC LIMIT :lim"
+            sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :uid AND status = :st ORDER BY created_at DESC LIMIT :lim"  # nosec B608 - table_name is a class constant; values are bound
             return self.db.query(sql, [
                 {"name": "uid", "value": {"stringValue": clerk_user_id}},
                 {"name": "st", "value": {"stringValue": status}},
                 {"name": "lim", "value": {"longValue": limit}},
             ])
-        sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :uid ORDER BY created_at DESC LIMIT :lim"
+        sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :uid ORDER BY created_at DESC LIMIT :lim"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query(sql, [
             {"name": "uid", "value": {"stringValue": clerk_user_id}},
             {"name": "lim", "value": {"longValue": limit}},
@@ -280,7 +280,7 @@ class TradingProfiles(BaseModel):
     table_name = "trading_profiles"
 
     def find_by_user(self, clerk_user_id: str) -> Optional[Dict]:
-        sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :cid"
+        sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :cid"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query_one(sql, [{"name": "cid", "value": {"stringValue": clerk_user_id}}])
 
     def upsert(self, data: Dict) -> Optional[str]:
@@ -331,7 +331,7 @@ class TradingSignals(BaseModel):
               AND status = 'active'
               AND (expires_at IS NULL OR expires_at > NOW())
             ORDER BY created_at DESC LIMIT :lim
-        """
+        """  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query(sql, [
             {"name": "cid", "value": {"stringValue": clerk_user_id}},
             {"name": "lim", "value": {"longValue": limit}},
@@ -354,18 +354,18 @@ class Trades(BaseModel):
     table_name = "trades"
 
     def find_by_user(self, clerk_user_id: str, limit: int = 100) -> List[Dict]:
-        sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :cid ORDER BY placed_at DESC LIMIT :lim"
+        sql = f"SELECT * FROM {self.table_name} WHERE clerk_user_id = :cid ORDER BY placed_at DESC LIMIT :lim"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query(sql, [
             {"name": "cid", "value": {"stringValue": clerk_user_id}},
             {"name": "lim", "value": {"longValue": limit}},
         ])
 
     def find_by_broker_order(self, broker_order_id: str) -> Optional[Dict]:
-        sql = f"SELECT * FROM {self.table_name} WHERE broker_order_id = :bid"
+        sql = f"SELECT * FROM {self.table_name} WHERE broker_order_id = :bid"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query_one(sql, [{"name": "bid", "value": {"stringValue": broker_order_id}}])
 
     def find_by_idempotency_key(self, key: str) -> Optional[Dict]:
-        sql = f"SELECT * FROM {self.table_name} WHERE idempotency_key = :k::uuid"
+        sql = f"SELECT * FROM {self.table_name} WHERE idempotency_key = :k::uuid"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query_one(sql, [{"name": "k", "value": {"stringValue": key}}])
 
     def record_trade(self, data: Dict) -> Optional[str]:
@@ -387,19 +387,19 @@ class ResearcherEvents(BaseModel):
 
     def find_candidates(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict]:
         if symbol:
-            sql = f"SELECT * FROM {self.table_name} WHERE symbol = :sym AND status = 'candidate' ORDER BY discovered_at DESC LIMIT :lim"
+            sql = f"SELECT * FROM {self.table_name} WHERE symbol = :sym AND status = 'candidate' ORDER BY discovered_at DESC LIMIT :lim"  # nosec B608 - table_name is a class constant; values are bound
             return self.db.query(sql, [
                 {"name": "sym", "value": {"stringValue": symbol}},
                 {"name": "lim", "value": {"longValue": limit}},
             ])
-        sql = f"SELECT * FROM {self.table_name} WHERE status = 'candidate' ORDER BY discovered_at DESC LIMIT :lim"
+        sql = f"SELECT * FROM {self.table_name} WHERE status = 'candidate' ORDER BY discovered_at DESC LIMIT :lim"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query(sql, [{"name": "lim", "value": {"longValue": limit}}])
 
     def record_event(self, data: Dict) -> Optional[str]:
         return self.db.insert(self.table_name, data, returning="id")
 
     def find_by_event_id(self, event_id: str) -> Optional[Dict]:
-        sql = f"SELECT * FROM {self.table_name} WHERE event_id = :eid"
+        sql = f"SELECT * FROM {self.table_name} WHERE event_id = :eid"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query_one(sql, [{"name": "eid", "value": {"stringValue": event_id}}])
 
     def update_status(self, event_id: str, status: str) -> int:
@@ -423,7 +423,7 @@ class TradingAudit(BaseModel):
         return self.db.insert(self.table_name, entry)
 
     def latest(self) -> Optional[Dict]:
-        sql = f"SELECT * FROM {self.table_name} ORDER BY event_time DESC, id DESC LIMIT 1"
+        sql = f"SELECT * FROM {self.table_name} ORDER BY event_time DESC, id DESC LIMIT 1"  # nosec B608 - table_name is a class constant; values are bound
         return self.db.query_one(sql)
 
     def verify_chain(self, limit: int = 1000) -> bool:
@@ -433,7 +433,7 @@ class TradingAudit(BaseModel):
             FROM {self.table_name}
             ORDER BY id ASC
             LIMIT :lim
-        """
+        """  # nosec B608 - table_name is a class constant; values are bound
         rows = self.db.query(sql, [{"name": "lim", "value": {"longValue": limit}}])
         for i in range(1, len(rows)):
             if rows[i]["prev_hash"] != rows[i - 1]["this_hash"]:

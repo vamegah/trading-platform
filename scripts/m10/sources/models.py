@@ -11,9 +11,13 @@ Scans the model registry manifest produced by ML training:
 import json
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-TEMPLATES = Environment(loader=FileSystemLoader(Path(__file__).parent.parent / "templates"))
+TEMPLATES = Environment(
+    loader=FileSystemLoader(Path(__file__).parent.parent / "templates"),
+    # Templates are Markdown (.md.j2); escape only if HTML/XML templates are added.
+    autoescape=select_autoescape(["html", "xml"]),
+)
 
 REGISTRY_MANIFEST = Path("evidence/models/registry_manifest.json")
 

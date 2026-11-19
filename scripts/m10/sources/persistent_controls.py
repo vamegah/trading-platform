@@ -9,10 +9,14 @@ Verifies:
 """
 import os
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pathlib import Path
 
-TEMPLATES = Environment(loader=FileSystemLoader(Path(__file__).parent.parent / "templates"))
+TEMPLATES = Environment(
+    loader=FileSystemLoader(Path(__file__).parent.parent / "templates"),
+    # Templates are Markdown (.md.j2); escape only if HTML/XML templates are added.
+    autoescape=select_autoescape(["html", "xml"]),
+)
 
 
 def collect(environment: str) -> str:
