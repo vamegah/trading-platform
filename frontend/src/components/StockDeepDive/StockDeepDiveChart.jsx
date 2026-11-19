@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import ChartContainer from '../Charts/ChartContainer';
-import ChartDataTable from '../Charts/ChartDataTable';
-import ChartErrorBoundary from '../Charts/ChartErrorBoundary';
+import ChartContainer from '../ChartContainer';
+import ChartDataTable from '../ChartDataTable';
+import ChartErrorBoundary from '../ChartErrorBoundary';
 import { generateSampleOHLCV, formatCurrency } from '../../utils/charts/formatters';
 import PropTypes from 'prop-types';
 import CandlestickLayer from './CandlestickLayer';
 import VolumeLayer from './VolumeLayer';
+
+const CHART_OPTIONS_PRICE = { timeScale: { timeVisible: true } };
 
 const percent = (value = 0) => `${Math.round(value * 100)}%`;
 
@@ -78,15 +80,12 @@ function StockDeepDive({ signal, symbol = 'MSFT', priceData }) {
         {chartStatus === 'loading' ? (
           <div className="chart-placeholder chart-frame--price">Loading price chart...</div>
         ) : hasPriceData ? (
-          <ChartErrorBoundary componentName="StockDeepDiveChart" fallbackHeight={300}>
+          <ChartErrorBoundary fallback="Price data unavailable">
             <div className="chart-frame chart-frame--price">
               <ChartContainer
-                aria-label={`Candlestick chart showing ${ohlcvData.length} OHLCV data points for ${symbol} with volume bars, entry zone, stop-loss, and take-profit levels when available`}
+                ariaLabel={`Candlestick chart showing ${ohlcvData.length} OHLCV data points for ${symbol} with volume bars, entry zone, stop-loss, and take-profit levels when available`}
                 height={300}
-                monitoringName="StockDeepDiveCandlestick"
-                options={{ timeScale: { timeVisible: true } }}
-                role="img"
-                width={800}
+                options={CHART_OPTIONS_PRICE}
               >
                 <CandlestickLayer ohlcvData={ohlcvData} signal={signal} />
                 <VolumeLayer ohlcvData={ohlcvData} />

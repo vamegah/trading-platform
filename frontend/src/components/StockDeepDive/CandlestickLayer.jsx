@@ -2,7 +2,16 @@ import { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import useChartSeries from '../../hooks/useChartSeries';
 import { formatCandleData } from '../../utils/charts/formatters';
-import { colors, seriesColors } from '../../utils/charts/theme';
+import { CHART_THEME } from '../../styles/chart-theme';
+
+const CANDLE_COLORS = {
+  upColor: CHART_THEME.green,
+  downColor: CHART_THEME.red,
+  borderUpColor: CHART_THEME.green,
+  borderDownColor: CHART_THEME.red,
+  wickUpColor: CHART_THEME.green,
+  wickDownColor: CHART_THEME.red,
+};
 
 const present = (value) => value !== undefined && value !== null && value !== '' && Number.isFinite(Number(value));
 
@@ -20,7 +29,7 @@ function CandlestickLayer({ ohlcvData, signal }) {
   useEffect(() => {
     if (!ohlcvData?.length) return undefined;
 
-    const result = addSeries('candlestick', seriesColors.candlestick, formatCandleData(ohlcvData));
+    const result = addSeries('candlestick', CANDLE_COLORS, formatCandleData(ohlcvData));
     if (!result) return undefined;
     const { seriesId } = result;
 
@@ -34,10 +43,10 @@ function CandlestickLayer({ ohlcvData, signal }) {
         title,
       });
 
-    if (present(entryLow)) line(entryLow, colors.warning, 2, 'Entry Low');
-    if (present(entryHigh)) line(entryHigh, colors.warning, 2, 'Entry High');
-    if (present(stopLoss)) line(stopLoss, colors.down, 0, 'Stop Loss');
-    if (present(takeProfit)) line(takeProfit, colors.up, 0, 'Take Profit');
+    if (present(entryLow)) line(entryLow, CHART_THEME.amber, 2, 'Entry Low');
+    if (present(entryHigh)) line(entryHigh, CHART_THEME.amber, 2, 'Entry High');
+    if (present(stopLoss)) line(stopLoss, CHART_THEME.red, 0, 'Stop Loss');
+    if (present(takeProfit)) line(takeProfit, CHART_THEME.green, 0, 'Take Profit');
 
     fitContent();
 

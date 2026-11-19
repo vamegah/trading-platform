@@ -1,5 +1,5 @@
 import { useContext, useCallback, useRef, useEffect } from 'react';
-import { ChartContext } from '../components/Charts/ChartContainer';
+import { ChartContext } from '../components/ChartContainer';
 import {
   AreaSeries,
   CandlestickSeries,
@@ -27,7 +27,9 @@ const SERIES_METHODS = {
  * @returns {Object} - { addSeries, updateSeriesData, series }
  */
 const useChartSeries = (seriesType, initialData = []) => {
-  const chart = useContext(ChartContext);
+  // ChartContainer provides a ref; its children render only after the chart exists.
+  const chartRef = useContext(ChartContext);
+  const chart = chartRef?.current ?? null;
   const seriesRef = useRef(null);
   const seriesMapRef = useRef(new Map());
   const markerMapRef = useRef(new Map());

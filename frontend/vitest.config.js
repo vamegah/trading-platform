@@ -6,7 +6,10 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: "jsdom",
-      include: ["src/__tests__/unit/**/*.test.js"],
+      include: [
+        "src/__tests__/unit/**/*.test.js",
+        "src/__tests__/integration/**/*.test.js",
+      ],
     },
   })
 );
