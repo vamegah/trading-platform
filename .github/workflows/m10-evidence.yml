@@ -1,0 +1,106 @@
+name: m10-evidence
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["deploy-staging"]
+    types: [completed]
+
+permissions:
+  id-token: write
+  contents: write
+
+concurrency:
+  group: m10-evidence-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  collect-and-validate:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.x"
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system boto3 httpx jinja2 pydantic
+
+      - name: Collect evidence
+        env:
+          AURORA_CLUSTER_ARN: ${{ secrets.AURORA_CLUSTER_ARN }}
+          AURORA_SECRET_ARN: ${{ secrets.AURORA_SECRET_ARN }}
+          AURORA_DATABASE: trading
+        run: |
+          python -m scripts.m10.collect \
+            --environment staging \
+            --out release_evidence.staging.json
+
+      - name: Validate
+        run: |
+          python -m scripts.m10.validate --manifest release_evidence.staging.json
+
+      - name: Upload evidence artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10-evidence-staging
+          path: |
+            evidence/**
+            release_evidence.staging.json
+          retention-days: 90
+
+      - name: Commit manifest
+        run: |
+          git config user.name "m10-bot"
+          git config user.email "m10-bot@users.noreply.github.com"
+          cp release_evidence.staging.json release_evidence.json
+          git add release_evidence.json evidence/
+          git commit -m "chore: m10 evidence update [${{ github.run_id }}]" || echo "no changes"
+          git push || echo "push skipped"
+
+  gate-production:
+    if: github.event_name == 'workflow_dispatch'
+    needs: [collect-and-validate]
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.x"
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system pydantic
+
+      - name: Run go-live gate
+        run: |
+          python -m scripts.m10.go_live_gate \
+            --environment production \
+            --evidence-manifest release_evidence.json \
+            --live-requested \
+            --fail-closed

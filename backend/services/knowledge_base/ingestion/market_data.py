@@ -1,5 +1,5 @@
-from backend.data_pipeline.ingestion.providers import MarketDataManager, get_market_data_manager
-from backend.data_pipeline.ingestion.orchestrator import data_orchestrator
+from backend.services.knowledge_base.ingestion.providers import MarketDataManager, get_market_data_manager
+from backend.services.knowledge_base.ingestion.orchestrator import data_orchestrator
 
 
 def fetch_market_data(symbols: list[str], manager: MarketDataManager | None = None) -> list[dict]:

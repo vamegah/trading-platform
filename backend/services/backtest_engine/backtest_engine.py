@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from statistics import mean
 from typing import Any
 
-from backend.data_pipeline.ingestion.security_master import SecurityMasterStore, universe_as_of
+from backend.services.knowledge_base.ingestion.security_master import SecurityMasterStore, universe_as_of
 from backend.services.backtest_engine.cost_model import estimate_transaction_cost
 from backend.services.backtest_engine.metrics import summarize_performance
 from backend.shared.data_lake import record_data_lake_edge

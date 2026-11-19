@@ -21,9 +21,7 @@ PLACEHOLDER_VALUES = {
 
 
 class Settings(BaseSettings):
-    database_url: str = (
-        "postgresql://trading_user:strong_password@localhost:5432/trading_db"
-    )
+    database_url: str = "sqlite:///./trading_platform.db"
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "change-me"
     algorithm: str = "HS256"
@@ -37,6 +35,12 @@ class Settings(BaseSettings):
     marketstack_key: str = os.getenv("MARKETSTACK_API_KEY", "")
     openai_key: str = os.getenv("OPENAI_API_KEY", "")
     anthropic_api_key: Optional[str] = None
+    portfolio_advisor_llm_enabled: bool = False
+    portfolio_advisor_bedrock_model_id: str = "us.amazon.nova-pro-v1:0"
+    portfolio_advisor_bedrock_region: str = "us-east-1"
+    portfolio_advisor_research_enabled: bool = False
+    researcher_agent_url: str = ""
+    researcher_api_key: Optional[str] = None
     sentiment_model: str = "vader"  # or "finbert"
     news_api_key: Optional[str] = None
     fred_api_key: Optional[str] = None
@@ -135,6 +139,18 @@ class Settings(BaseSettings):
 
     def production_readiness_issues(self) -> list[str]:
         issues: list[str] = []
+        if self.portfolio_advisor_research_enabled and not self.portfolio_advisor_llm_enabled:
+            issues.append("PORTFOLIO_ADVISOR_RESEARCH_ENABLED requires PORTFOLIO_ADVISOR_LLM_ENABLED")
+        if self.portfolio_advisor_llm_enabled:
+            if _is_placeholder(self.portfolio_advisor_bedrock_model_id):
+                issues.append("PORTFOLIO_ADVISOR_BEDROCK_MODEL_ID must name an enabled Bedrock model")
+            if _is_placeholder(self.portfolio_advisor_bedrock_region):
+                issues.append("PORTFOLIO_ADVISOR_BEDROCK_REGION must be set")
+        if self.portfolio_advisor_research_enabled:
+            if _is_placeholder(self.researcher_agent_url):
+                issues.append("RESEARCHER_AGENT_URL is required when platform research is enabled")
+            if _is_placeholder(self.researcher_api_key):
+                issues.append("RESEARCHER_API_KEY is required when platform research is enabled")
         if not self.is_production:
             return issues
 

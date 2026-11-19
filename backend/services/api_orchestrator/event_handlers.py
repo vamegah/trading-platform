@@ -1,6 +1,6 @@
 from typing import Any
 
-from backend.data_pipeline.ingestion.orchestrator import data_orchestrator
+from backend.services.knowledge_base.ingestion.orchestrator import data_orchestrator
 from backend.shared.event_bus import event_bus
 from backend.shared.events import EVENT_TYPES, TOPICS
 

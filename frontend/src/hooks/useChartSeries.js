@@ -8,12 +8,20 @@ import {
   createSeriesMarkers,
 } from '@tradingview/lightweight-charts';
 
+// Defined at module scope — stable reference, never recreated on render.
+const SERIES_METHODS = {
+  candlestick: { definition: CandlestickSeries, legacyMethod: 'addCandlestickSeries' },
+  histogram: { definition: HistogramSeries, legacyMethod: 'addHistogramSeries' },
+  area: { definition: AreaSeries, legacyMethod: 'addAreaSeries' },
+  line: { definition: LineSeries, legacyMethod: 'addLineSeries' },
+};
+
 /**
  * useChartSeries - Hook to add and manage series data within a chart
- * 
+ *
  * Provides methods to add series and update data without direct chart access.
  * Automatically handles series cleanup on unmount.
- * 
+ *
  * @param {string} seriesType - Type of series: 'candlestick', 'histogram', 'area', 'line'
  * @param {Array} initialData - Initial data for the series
  * @returns {Object} - { addSeries, updateSeriesData, series }
@@ -24,13 +32,6 @@ const useChartSeries = (seriesType, initialData = []) => {
   const seriesMapRef = useRef(new Map());
   const markerMapRef = useRef(new Map());
   const nextSeriesIdRef = useRef(0);
-
-  const SERIES_METHODS = {
-    candlestick: { definition: CandlestickSeries, legacyMethod: 'addCandlestickSeries' },
-    histogram: { definition: HistogramSeries, legacyMethod: 'addHistogramSeries' },
-    area: { definition: AreaSeries, legacyMethod: 'addAreaSeries' },
-    line: { definition: LineSeries, legacyMethod: 'addLineSeries' },
-  };
 
   const validateSeriesType = useCallback((type) => {
     if (!SERIES_METHODS[type]) {

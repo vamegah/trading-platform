@@ -8,6 +8,12 @@ x-backend-env: &backend-env
   CREATE_TABLES_ON_STARTUP: ${CREATE_TABLES_ON_STARTUP:-false}
   LIVE_TRADING_ENABLED: ${LIVE_TRADING_ENABLED:-false}
   REQUIRE_LIVE_INTEGRATIONS: ${REQUIRE_LIVE_INTEGRATIONS:-false}
+  PORTFOLIO_ADVISOR_LLM_ENABLED: ${PORTFOLIO_ADVISOR_LLM_ENABLED:-false}
+  PORTFOLIO_ADVISOR_BEDROCK_MODEL_ID: ${PORTFOLIO_ADVISOR_BEDROCK_MODEL_ID:-us.amazon.nova-pro-v1:0}
+  PORTFOLIO_ADVISOR_BEDROCK_REGION: ${PORTFOLIO_ADVISOR_BEDROCK_REGION:-us-east-1}
+  PORTFOLIO_ADVISOR_RESEARCH_ENABLED: ${PORTFOLIO_ADVISOR_RESEARCH_ENABLED:-false}
+  RESEARCHER_AGENT_URL: ${RESEARCHER_AGENT_URL:-http://researcher-agent:8000}
+  RESEARCHER_API_KEY: ${RESEARCHER_API_KEY:-}
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
 
 services:
@@ -49,6 +55,12 @@ services:
       CREATE_TABLES_ON_STARTUP: ${CREATE_TABLES_ON_STARTUP:-true}
       LIVE_TRADING_ENABLED: ${LIVE_TRADING_ENABLED:-false}
       REQUIRE_LIVE_INTEGRATIONS: ${REQUIRE_LIVE_INTEGRATIONS:-false}
+      PORTFOLIO_ADVISOR_LLM_ENABLED: ${PORTFOLIO_ADVISOR_LLM_ENABLED:-false}
+      PORTFOLIO_ADVISOR_BEDROCK_MODEL_ID: ${PORTFOLIO_ADVISOR_BEDROCK_MODEL_ID:-us.amazon.nova-pro-v1:0}
+      PORTFOLIO_ADVISOR_BEDROCK_REGION: ${PORTFOLIO_ADVISOR_BEDROCK_REGION:-us-east-1}
+      PORTFOLIO_ADVISOR_RESEARCH_ENABLED: ${PORTFOLIO_ADVISOR_RESEARCH_ENABLED:-false}
+      RESEARCHER_AGENT_URL: ${RESEARCHER_AGENT_URL:-http://researcher-agent:8000}
+      RESEARCHER_API_KEY: ${RESEARCHER_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
     ports:
       - "8000:8000"
@@ -251,6 +263,49 @@ services:
       - ./backend:/app/backend
       - ./config:/app/config
     command: python -m backend.services.portfolio_service.worker
+
+  portfolio-advisor-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment:
+      <<: *backend-env
+      AWS_PROFILE: ${AWS_PROFILE:-default}
+      AWS_SDK_LOAD_CONFIG: "1"
+      AWS_CONFIG_FILE: /root/.aws/config
+      AWS_SHARED_CREDENTIALS_FILE: /root/.aws/credentials
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ${HOME}/.aws:/root/.aws:ro
+    command: python -m backend.services.portfolio_advisor_service.worker
+
+  researcher-agent:
+    profiles: ["research"]
+    build:
+      context: .
+      dockerfile: infrastructure/docker/researcher.Dockerfile
+    environment:
+      BEDROCK_REGION: ${PORTFOLIO_ADVISOR_BEDROCK_REGION:-us-east-1}
+      RESEARCHER_MODEL: bedrock/converse/${PORTFOLIO_ADVISOR_BEDROCK_MODEL_ID:-us.amazon.nova-pro-v1:0}
+      RESEARCHER_API_KEY: ${RESEARCHER_API_KEY:-}
+      RESEARCHER_RUN_TIMEOUT: ${RESEARCHER_RUN_TIMEOUT:-600}
+      RESEARCHER_MAX_CONCURRENCY: ${RESEARCHER_MAX_CONCURRENCY:-2}
+      MCP_LOGGING: ${MCP_LOGGING:-false}
+      NEWS_API_KEY: ${NEWS_API_KEY:-}
+      NEWS_API_COMMAND: ${NEWS_API_COMMAND:-news-mcp}
+      AWS_PROFILE: ${AWS_PROFILE:-default}
+      AWS_SDK_LOAD_CONFIG: "1"
+      AWS_CONFIG_FILE: /root/.aws/config
+      AWS_SHARED_CREDENTIALS_FILE: /root/.aws/credentials
+    expose:
+      - "8000"
+    volumes:
+      - ${HOME}/.aws:/root/.aws:ro
 
   backtest-worker:
     build:

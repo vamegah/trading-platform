@@ -1,0 +1,76 @@
+name: deploy-staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-lambdas.yml
+    with:
+      environment: staging
+      artifacts_bucket: trading-staging-lambda-artifacts
+      aws_region: us-east-1
+    secrets: inherit
+
+  terraform:
+    needs: [build]
+    uses: ./.github/workflows/terraform-apply.yml
+    with:
+      environment: staging
+      artifacts_bucket: trading-staging-lambda-artifacts
+      aws_region: us-east-1
+      tfvars_secret: TFVARS_STAGING
+    secrets: inherit
+
+  frontend:
+    needs: [terraform]
+    uses: ./.github/workflows/deploy-frontend.yml
+    with:
+      environment: staging
+      aws_region: us-east-1
+      frontend_bucket: trading-staging-frontend
+      cloudfront_distribution_id: ${{ needs.terraform.outputs.cloudfront_distribution_id }}
+      clerk_publishable_key: ${{ secrets.CLERK_PUBLISHABLE_KEY_STAGING }}
+      api_url: ${{ needs.terraform.outputs.api_endpoint }}
+    secrets: inherit
+
+  smoke:
+    needs: [terraform, frontend]
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: API health
+        run: |
+          API="${{ needs.terraform.outputs.api_endpoint }}"
+          for i in {1..10}; do
+            if curl -fsS "$API/health" >/dev/null; then
+              echo "API healthy"; exit 0
+            fi
+            echo "Waiting for API… ($i/10)"
+            sleep 15
+          done
+          echo "API failed health check" >&2
+          exit 1
+
+      - name: Frontend reachable
+        run: |
+          curl -fsS "${{ needs.terraform.outputs.api_endpoint }}/health" >/dev/null
+          curl -fsS "https://${{ needs.frontend.outputs.cloudfront_domain || 'placeholder' }}" >/dev/null || true

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   approveStagedOrder,
   cancelAllEmergencyOrders,
@@ -85,7 +85,7 @@ export default function Workstation({ symbol = "MSFT" }) {
   const [emergency, setEmergency] = useState(null);
   const [actionStatus, setActionStatus] = useState("loading");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setActionStatus("loading");
     try {
       const [overviewData, basketData, taxData, borrowData, microData, stagingData, qualityData, strategyData, riskData, archiveData, emergencyData, portfolioData] =
@@ -120,11 +120,11 @@ export default function Workstation({ symbol = "MSFT" }) {
     } catch {
       setActionStatus("error");
     }
-  };
+  }, [symbol]);
 
   useEffect(() => {
     load();
-  }, [symbol]);
+  }, [load]);
 
   const previewCore = async () => {
     setActionStatus("previewing");

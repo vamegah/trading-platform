@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   checkMarketDataEntitlement,
   createAdminOverride,
@@ -97,7 +97,7 @@ export default function BrokerageOps({ symbol = "MSFT" }) {
   const [report, setReport] = useState(null);
   const [actionStatus, setActionStatus] = useState("loading");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setActionStatus("loading");
     try {
       const [
@@ -140,11 +140,11 @@ export default function BrokerageOps({ symbol = "MSFT" }) {
     } catch {
       setActionStatus("error");
     }
-  };
+  }, [symbol]);
 
   useEffect(() => {
     load();
-  }, [symbol]);
+  }, [load]);
 
   const requestSandboxTransfer = async () => {
     setActionStatus("transfer");

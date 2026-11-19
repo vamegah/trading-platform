@@ -1,0 +1,15 @@
+# Cloud Infrastructure Plan
+
+Environment: {{ environment }}
+
+- Terraform plan: `{{ plan_log }}`
+- Terraform apply: `{{ apply_log }}`
+- DR region verified: {{ dr_ok }}
+
+## Backups
+
+| Service | Retention | Last Snapshot |
+|---------|-----------|---------------|
+{% for b in backups -%}
+| {{ b.service }} | {{ b.retention_days }} | {{ b.last_snapshot }} |
+{% endfor %}

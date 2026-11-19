@@ -1,0 +1,95 @@
+name: pr-validate
+
+# Checks that complement ci.yml. ci.yml already lints and tests everything that
+# installs from the root requirements.txt (api_gateway, agents, knowledge_base, ...)
+# and runs terraform fmt/validate on the infrastructure/terraform root module.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Services that are standalone uv projects (own pyproject.toml + uv.lock).
+  backend-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - backend/database
+          - backend/services/agents/researcher_agent
+          - backend/services/scheduler
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync dependencies
+        working-directory: ${{ matrix.service }}
+        run: uv sync --frozen
+
+      - name: Ruff
+        working-directory: ${{ matrix.service }}
+        run: |
+          if grep -q "\[tool.ruff\]" pyproject.toml 2>/dev/null || [[ -f ruff.toml ]]; then
+            uv run --with ruff ruff check .
+          fi
+
+      - name: Pytest
+        working-directory: ${{ matrix.service }}
+        run: |
+          if [[ -d tests ]]; then
+            uv run --with pytest pytest -q
+          fi
+
+  frontend-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci
+      - working-directory: frontend
+        run: npm run test:unit
+      - working-directory: frontend
+        run: npm run build
+
+  # Numbered stacks are separate Terraform root modules; ci.yml only validates
+  # infrastructure/terraform itself.
+  terraform-validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        stack:
+          - 2_sagemaker
+          - 3_ingestion
+          - 4_researcher
+          - 5_database
+          - 6_agents
+          - 7_frontend
+          - 8_enterprise
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform init
+        working-directory: infrastructure/terraform/${{ matrix.stack }}
+        run: terraform init -backend=false -input=false
+      - name: Terraform validate
+        working-directory: infrastructure/terraform/${{ matrix.stack }}
+        run: terraform validate -no-color

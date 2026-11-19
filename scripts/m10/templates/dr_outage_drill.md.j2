@@ -1,0 +1,17 @@
+# Disaster Recovery and Outage Drill
+
+Environment: {{ environment }}
+
+| Aspect | Result |
+|--------|--------|
+| RTO (minutes) | {{ rto }} |
+| RPO (minutes) | {{ rpo }} |
+| Regional failover | {{ region_failover }} |
+| Provider failover | {{ provider_failover }} |
+| Redis recovery | {{ redis_recovery }} |
+| Broker outage | {{ broker_outage }} |
+
+## Attachments
+
+- Chaos reports: `evidence/chaos/*.md`
+- Grafana snapshots: `evidence/dr/grafana/*.png`

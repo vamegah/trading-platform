@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   compareMarketplaceStrategies,
   createAcatsTransfer,
@@ -104,7 +104,7 @@ export default function OneStop({ symbol = "MSFT" }) {
   const [notifications, setNotifications] = useState(null);
   const [actionStatus, setActionStatus] = useState("loading");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setActionStatus("loading");
     try {
       const [
@@ -162,11 +162,11 @@ export default function OneStop({ symbol = "MSFT" }) {
     } catch {
       setActionStatus("error");
     }
-  };
+  }, [symbol]);
 
   useEffect(() => {
     load();
-  }, [symbol]);
+  }, [load]);
 
   const refreshBroker = async () => {
     setActionStatus("broker refresh");

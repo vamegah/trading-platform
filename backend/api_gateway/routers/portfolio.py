@@ -31,24 +31,41 @@ class PositionSizingPayload(BaseModel):
 
 @router.get("/summary", response_model=PortfolioSnapshot)
 async def summary() -> PortfolioSnapshot:
+    from backend.services.trader_operating_system import portfolio_command_center
+    cmd = portfolio_command_center()
+    totals = cmd.get("totals", {})
+    positions = cmd.get("positions", [])
+    total_market_value = sum(float(p.get("market_value", 0)) for p in positions)
+    equity = float(totals.get("equity", total_market_value))
+    cash = float(totals.get("cash", 0.0))
+    gross_exposure = round(total_market_value / max(equity, 1.0), 4) if equity else 0.0
+    long_val = sum(float(p.get("market_value", 0)) for p in positions if float(p.get("market_value", 0)) > 0)
+    short_val = sum(float(p.get("market_value", 0)) for p in positions if float(p.get("market_value", 0)) < 0)
+    net_exposure = round((long_val + short_val) / max(equity, 1.0), 4) if equity else 0.0
+    risk_alerts = cmd.get("risk_alerts", [])
+    risk_score = min(100, len(risk_alerts) * 15 + int(gross_exposure * 60))
     return PortfolioSnapshot(
-        account_id="demo",
-        equity=125000.0,
-        cash=18420.0,
-        gross_exposure=0.82,
-        net_exposure=0.48,
-        risk_score=58,
+        account_id=str(totals.get("account_id", "primary")),
+        equity=equity,
+        cash=cash,
+        gross_exposure=gross_exposure,
+        net_exposure=net_exposure,
+        risk_score=risk_score,
     )
 
 
 @router.get("/health")
 async def health() -> dict[str, str | int]:
-    return {"status": "balanced", "risk_score": 58, "rebalance_due": "false"}
+    from backend.services.trader_operating_system import portfolio_command_center
+    cmd = portfolio_command_center()
+    risk_alerts = cmd.get("risk_alerts", [])
+    risk_score = min(100, len(risk_alerts) * 15)
+    return {"status": "balanced", "risk_score": risk_score, "rebalance_due": str(len(risk_alerts) > 0).lower()}
 
 
 @router.post("/position-size")
 async def position_size(payload: PositionSizingPayload) -> dict[str, object]:
-    result = calculate_position_size(PositionSizingInput(**payload.dict()))
+    result = calculate_position_size(PositionSizingInput(**payload.model_dump()))
     return result.__dict__
 
 

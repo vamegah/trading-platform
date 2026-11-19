@@ -1,0 +1,16 @@
+# Persistent Controls Restore
+
+Environment: {{ environment }}
+
+| Control | Status |
+|---------|--------|
+| Vault/Secrets Manager restore | {{ vault_restore }} |
+| Audit log restore | {{ audit_restore }} |
+| Privacy data restore | {{ privacy_restore }} |
+| Compliance record restore | {{ compliance_restore }} |
+| Audit hash chain integrity | {{ audit_chain_valid }} |
+
+## Runbook
+
+See `docs/runbooks/persistent-controls.md` for the restore procedure and
+scheduled cadence.

@@ -15,6 +15,7 @@
     "start": "vite --host 0.0.0.0",
     "build": "vite build",
     "test": "cd .. && node frontend/scripts/test-chart-tasks.mjs",
+    "test:unit": "vitest run",
     "test:validate": "cd .. && node frontend/scripts/generate-chart-release-evidence.mjs",
     "release:evidence": "cd .. && node frontend/scripts/generate-chart-release-evidence.mjs",
     "validate:accessibility": "cd .. && node frontend/scripts/validate-accessibility.js",
@@ -23,5 +24,11 @@
     "validate:visual": "cd .. && node frontend/scripts/validate-visual.mjs",
     "smoke:release": "cd .. && node frontend/scripts/smoke-chart-release.mjs",
     "preview": "vite preview --host 0.0.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "jsdom": "^31.0.1",
+    "vitest": "^5.1.1"
   }
 }

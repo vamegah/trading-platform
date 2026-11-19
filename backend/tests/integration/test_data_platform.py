@@ -5,11 +5,11 @@ import pytest
 from backend.data_pipeline.cleaning.corporate_actions import adjust_for_corporate_actions
 from backend.data_pipeline.cleaning.data_quality import validate_rows
 from backend.data_pipeline.cron_jobs.daily_sync import IngestionScheduler, run_intraday_sync
-from backend.data_pipeline.ingestion.alt_data import AlternativeDataFeed, default_alt_data_registry
-from backend.data_pipeline.ingestion.market_data import fetch_latest_quote
-from backend.data_pipeline.ingestion.news import fetch_economic_calendar
-from backend.data_pipeline.ingestion.providers import AlphaVantageProvider, MarketDataManager, PolygonProvider
-from backend.data_pipeline.ingestion.security_master import SecurityMasterStore, universe_as_of
+from backend.services.knowledge_base.ingestion.alt_data import AlternativeDataFeed, default_alt_data_registry
+from backend.services.knowledge_base.ingestion.market_data import fetch_latest_quote
+from backend.services.knowledge_base.ingestion.news import fetch_economic_calendar
+from backend.services.knowledge_base.ingestion.providers import AlphaVantageProvider, MarketDataManager, PolygonProvider
+from backend.services.knowledge_base.ingestion.security_master import SecurityMasterStore, universe_as_of
 from backend.data_pipeline.lake.feature_store import publish_features
 from backend.data_pipeline.lake.processed_store import write_processed_dataset
 from backend.data_pipeline.lake.raw_store import write_raw_dataset

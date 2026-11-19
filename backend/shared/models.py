@@ -2105,6 +2105,30 @@ class PortfolioReviewPackModel(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
 
 
+class PortfolioAdvisorJobModel(Base):
+    __tablename__ = "portfolio_advisor_jobs"
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(String, unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    portfolio_id = Column(Integer, ForeignKey("portfolios.id"), nullable=False, index=True)
+    idempotency_key = Column(String, nullable=True)
+    status = Column(String, default="pending", nullable=False, index=True)
+    request_payload = Column(JSON, nullable=False, default=dict)
+    source_snapshot = Column(JSON, nullable=False, default=dict)
+    result_payload = Column(JSON, nullable=True)
+    error_message = Column(Text, nullable=True)
+    audit_id = Column(String, nullable=False, index=True)
+    attempt_count = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        Index("uq_portfolio_advisor_user_idempotency", "user_id", "idempotency_key", unique=True),
+        Index("ix_portfolio_advisor_user_created", "user_id", "created_at"),
+    )
+
+
 class MobileDeviceModel(Base):
     __tablename__ = "mobile_devices"
 

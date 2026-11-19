@@ -1,0 +1,108 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "2.1 Create `frontend/src/styles/chart-theme.js`": [
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024693938
+      },
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024735210
+      }
+    ],
+    "2.2 Create `frontend/src/components/ChartContainer/index.js` and `ChartContainer.css`": [
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024738657
+      },
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024862842
+      }
+    ],
+    "2.3 Create `frontend/src/components/ChartErrorBoundary/index.js`": [
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024740685
+      },
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024863598
+      }
+    ],
+    "2.4 Create `frontend/src/components/AgentScoreChart/index.js` and `AgentScoreChart.css`": [
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024741303
+      },
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024864041
+      }
+    ],
+    "2.5 Add chart placeholder and error styles to `frontend/src/index.css`": [
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024741610
+      },
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024864430
+      }
+    ],
+    "2.7 Deliver via branch, PR, and passing workflows": [
+      {
+        "executionId": "b5ad1048-5284-407e-9453-0912cfe7d729",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795024867790
+      },
+      {
+        "executionId": "8b506b37-eb84-4dea-b9bd-c1470de84218",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795034495681
+      }
+    ],
+    "2. Shared chart foundation": [
+      {
+        "executionId": "8b506b37-eb84-4dea-b9bd-c1470de84218",
+        "chatSessionId": "sess_903d8079-20ea-44a7-a10b-d8cae55269bf",
+        "timestamp": 1795034496862
+      }
+    ],
+    "2.6 Write unit tests for the shared components": [
+      {
+        "executionId": "95599ac7-1f47-4b8d-a8eb-3e6e24cb84d1",
+        "chatSessionId": "sess_acd4a886-0661-4a16-9506-3ef1d790b326",
+        "timestamp": 1795042099350
+      },
+      {
+        "executionId": "003264c9-586a-467b-b7a2-400c24ee1612",
+        "chatSessionId": "sess_acd4a886-0661-4a16-9506-3ef1d790b326",
+        "timestamp": 1795042956721
+      }
+    ],
+    "3. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "0db0df07-efc0-44e3-97bc-2b79cbdc3496",
+        "chatSessionId": "sess_bae43706-5928-4f44-8135-8bea3bd698ee",
+        "timestamp": 1795047792480
+      },
+      {
+        "executionId": "0db0df07-efc0-44e3-97bc-2b79cbdc3496",
+        "chatSessionId": "sess_bae43706-5928-4f44-8135-8bea3bd698ee",
+        "timestamp": 1795047855352
+      }
+    ]
+  }
+}

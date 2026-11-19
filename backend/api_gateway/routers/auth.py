@@ -104,7 +104,10 @@ def refresh_token(
         raise HTTPException(status_code=401, detail="Invalid refresh token")
     if payload["sub"] == "demo" and not settings.is_production:
         return _token_response({"sub": "demo", "roles": payload.get("roles") or ["analyst"]})
-    user = db.query(User).get(int(payload["sub"]))
+    sub = payload["sub"]
+    if not str(sub).isdigit():
+        raise HTTPException(status_code=401, detail="Invalid token subject")
+    user = db.query(User).filter(User.id == int(sub)).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     roles = payload.get("roles") or (["admin"] if user.is_superuser else ["user"])

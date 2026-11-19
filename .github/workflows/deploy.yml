@@ -168,6 +168,26 @@ jobs:
           TF_VAR_aws_account_id: ${{ vars.AWS_ACCOUNT_ID }}
         run: terraform apply -input=false -auto-approve tfplan
 
+  m10-gate:
+    needs: [terraform]
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v3
+      - name: Install
+        run: uv pip install --system pydantic
+      - name: Go-live gate
+        run: |
+          python -m scripts.m10.go_live_gate \
+            --environment production \
+            --evidence-manifest release_evidence.json \
+            --live-requested \
+            --fail-closed
+
   deploy-kubernetes:
     name: Kubernetes Rollout
     runs-on: ubuntu-latest

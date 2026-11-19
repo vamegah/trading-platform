@@ -1,4 +1,4 @@
-from backend.data_pipeline.ingestion.providers import get_market_data_manager
+from backend.services.knowledge_base.ingestion.providers import get_market_data_manager
 
 
 class AgentToolbox:

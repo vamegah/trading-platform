@@ -9,7 +9,7 @@ def _engine_options(database_url: str) -> dict:
     if database_url.startswith("sqlite"):
         options["connect_args"] = {"check_same_thread": False}
     else:
-        options.update({"pool_size": 20, "max_overflow": 0})
+        options.update({"pool_size": 10, "max_overflow": 20})
     return options
 
 

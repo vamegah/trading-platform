@@ -37,6 +37,7 @@ GATEWAY_ROUTES: tuple[ServiceRoute, ...] = (
     ServiceRoute("validation", "/validation", ("model-validation",)),
     ServiceRoute("compliance", "/compliance", ("compliance-security-audit",)),
     ServiceRoute("reliability", "/reliability", ("scalability-reliability",)),
+    ServiceRoute("portfolio_advisor", "/portfolio-advisor", ("portfolio-advisor",)),
 )
 
 
@@ -54,6 +55,7 @@ SERVICE_GRAPH: dict[str, tuple[str, ...]] = {
         "one_stop",
         "redis_streams_event_bus",
         "safety",
+        "portfolio_advisor",
     ),
     "signal_orchestrator": (
         "fundamentals_agent",
@@ -86,6 +88,7 @@ EVENT_DRIVEN_SERVICE_GRAPH: dict[str, tuple[str, ...]] = {
         "commands.backtest",
         "commands.marketplace",
         "commands.personalization",
+        "commands.portfolio_advisor",
     ),
     "redis_streams_event_bus": (
         "signal_worker",
@@ -95,6 +98,7 @@ EVENT_DRIVEN_SERVICE_GRAPH: dict[str, tuple[str, ...]] = {
         "backtest_worker",
         "marketplace_worker",
         "personalization_worker",
+        "portfolio_advisor_worker",
     ),
     "event_workers": (
         "events.signal",
@@ -104,5 +108,6 @@ EVENT_DRIVEN_SERVICE_GRAPH: dict[str, tuple[str, ...]] = {
         "events.backtest",
         "events.marketplace",
         "events.personalization",
+        "events.portfolio_advisor",
     ),
 }

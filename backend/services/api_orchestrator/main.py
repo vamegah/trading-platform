@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from backend.data_pipeline.ingestion.orchestrator import data_orchestrator
+from backend.services.knowledge_base.ingestion.orchestrator import data_orchestrator
 from backend.shared.external_api.router import external_api_router
 from backend.shared.observability import instrument_app
 

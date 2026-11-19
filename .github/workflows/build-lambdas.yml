@@ -1,0 +1,99 @@
+name: build-lambdas
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      artifacts_bucket:
+        required: true
+        type: string
+      aws_region:
+        required: true
+        type: string
+    outputs:
+      build_sha:
+        description: "SHA of the build artifacts"
+        value: ${{ jobs.build.outputs.build_sha }}
+
+concurrency:
+  group: build-lambdas-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ inputs.aws_region }}
+  ARTIFACTS_BUCKET: ${{ inputs.artifacts_bucket }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      build_sha: ${{ steps.meta.outputs.build_sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Record build metadata
+        id: meta
+        run: |
+          echo "build_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.x"
+
+      - name: Install Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Prime Docker
+        run: docker pull public.ecr.aws/lambda/python:3.12
+
+      - name: Install Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Build each Lambda in parallel via matrix
+      - name: Build planner
+        run: ./scripts/ci/build_one_lambda.sh portfolio_planner planner
+
+      - name: Build tagger
+        run: ./scripts/ci/build_one_lambda.sh agents/instrument_tagger tagger
+
+      - name: Build reporter
+        run: ./scripts/ci/build_one_lambda.sh agents/report_writer reporter
+
+      - name: Build charter
+        run: ./scripts/ci/build_one_lambda.sh agents/chart_maker charter
+
+      - name: Build retirement
+        run: ./scripts/ci/build_one_lambda.sh agents/retirement_specialist retirement
+
+      - name: Build researcher
+        run: ./scripts/ci/build_one_lambda.sh agents/researcher_agent researcher
+
+      - name: Build scheduler
+        run: ./scripts/ci/build_one_lambda.sh scheduler scheduler
+
+      - name: Build ingest
+        run: ./scripts/ci/build_one_lambda.sh knowledge_base/ingest knowledge_base
+
+      - name: Build search
+        run: ./scripts/ci/build_one_lambda.sh knowledge_base/ingest knowledge_base
+
+      - name: Build api
+        run: ./scripts/ci/build_one_lambda.sh api_gateway api
+
+      - name: Upload Lambda artifacts
+        run: ./scripts/ci/upload_artifacts.sh "$ARTIFACTS_BUCKET" "${GITHUB_SHA}"

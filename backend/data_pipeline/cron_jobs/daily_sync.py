@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from backend.data_pipeline.cleaning.data_quality import quality_gate_or_raise
-from backend.data_pipeline.ingestion.alt_data import fetch_alt_data
-from backend.data_pipeline.ingestion.market_data import fetch_market_data
-from backend.data_pipeline.ingestion.news import (
+from backend.services.knowledge_base.ingestion.alt_data import fetch_alt_data
+from backend.services.knowledge_base.ingestion.market_data import fetch_market_data
+from backend.services.knowledge_base.ingestion.news import (
     fetch_economic_calendar,
     fetch_insider_transactions,
     fetch_news,

@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { createAccount } from '../services/api';
 
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
-      const res = await axios.post('/api/auth/signup', { email, password });
-      localStorage.setItem('access_token', res.data.access_token);
-      localStorage.setItem('refresh_token', res.data.refresh_token);
-      navigate('/questionnaire');
+      const res = await createAccount(email, password);
+      window.localStorage.setItem('trading-session', JSON.stringify({
+        accessToken: res.access_token,
+        refreshToken: res.refresh_token,
+      }));
+      window.location.href = '/questionnaire';
     } catch (err) {
-      alert('Registration failed');
+      setError(err.message || 'Registration failed');
     }
   };
 
@@ -23,8 +25,9 @@ const Register = () => {
     <div>
       <h2>Register</h2>
       <form onSubmit={handleSubmit}>
-        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" required />
-        <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" required />
+        <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required />
+        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required />
+        {error && <p role="alert">{error}</p>}
         <button type="submit">Register</button>
       </form>
     </div>
