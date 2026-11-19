@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 
 from backend.data_pipeline.cleaning.data_quality import quality_gate_or_raise, validate_rows
-from backend.data_pipeline.ingestion.stream_ingestion import polygon_stock_stream
+from backend.services.knowledge_base.ingestion.stream_ingestion import polygon_stock_stream
 from backend.data_pipeline.lake.feature_store import publish_features
 from backend.data_pipeline.lake.raw_store import write_raw_dataset
 
