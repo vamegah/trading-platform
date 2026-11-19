@@ -159,6 +159,29 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
     - Run `git branch -r --no-merged origin/main` and `git branch --no-merged main` and confirm no feature branch holds unmerged work. Report any that do.
     - _Requirements: 11.12, 11.13, 11.14, 11.2_
 
+- [ ] 8. Infrastructure follow-up: Lambda artifact paths
+  - [ ] 8.1 Align Lambda zip locations between the CI build and the Terraform stacks
+    - Outside the chart scope of this plan. Found while fixing CI on PR #29: `terraform validate` passes only because of `fileexists(...) ? ... : null` guards, and `terraform apply` would not find the zips.
+    - Pick one artifact location and file name per Lambda, then use it in `.github/scripts/ci/build_one_lambda.sh`, `.github/workflows/build-lambdas.yml`, `scripts/deploy.py`, and every stack. Paths resolve from each stack folder (`infrastructure/terraform/<stack>`), so `${path.module}/../..` is `infrastructure/` and the repo root is `${path.module}/../../..`.
+    - Fix the build script inputs, which point at folders that do not exist: `SERVICE_DIR` is `backend/services/<arg>`, but the API is in `backend/api_gateway`, the planner is in `backend/services/agents/portfolio_planner`, and ingestion is in `backend/services/knowledge_base/ingestion` (the workflow passes `api_gateway`, `portfolio_planner`, and `knowledge_base/ingest`).
+    - Fix the Terraform references:
+      - `3_ingestion/main.tf`: `../../backend/services/knowledge_base/ingestion/lambda_function.zip` (the build copies it to `knowledge_base.zip`).
+      - `4_researcher/main.tf`: `../../backend/scheduler/lambda_function.zip`; the scheduler is in `backend/services/scheduler` and the build expects `scheduler.zip`.
+      - `6_agents/main.tf`: `../../backend/${each.key}/${each.key}_lambda.zip` for `planner`, `tagger`, `reporter`, `charter`, `retirement`; the build renames these to `<name>.zip` inside each agent folder.
+      - `7_frontend/main.tf`: `../../backend/api/api_lambda.zip`; the build renames it to `api.zip`, and `scripts/deploy.py` expects `api_lambda.zip`.
+    - Keep the `fileexists` guards so `terraform validate` still passes on a checkout without built zips.
+    - Verify: build at least one Lambda through `build_one_lambda.sh`, confirm the zip lands at the path its stack references, and run `terraform validate` for stacks 2-8 plus `terraform fmt -check -recursive`.
+    - _Requirements: none in requirements.md (infrastructure fix outside the chart scope)_
+
+  - [ ] 8.2 Deliver via branch, PR, and passing workflows
+    - Start only after 7.1. Run `git fetch origin`, `git checkout main`, `git pull --ff-only origin main`, then `git checkout -b fix/t8-lambda-artifact-paths`. Commit the work from 8.1.
+    - Push with `git push -u origin <branch>`, open the PR with `gh pr create --base main --head <branch>`, and run `gh pr checks <pr> --watch`.
+    - Fix failing checks with new commits and no force push or bypass. Stop and report after 3 consecutive failures of the same check.
+    - Resolve any conflicts on the branch by merging `origin/main`, keeping others' changes.
+    - Merge with `gh pr merge <pr> --squash` only when all checks pass. Update local `main` with `git checkout main`, `git fetch origin`, `git merge --ff-only origin/main`.
+    - Watch main workflows with `gh run watch <run-id>` until each finishes. Fix failures through a new unit of work.
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10, 11.11, 11.12, 11.13, 11.14_
+
 ## Notes
 
 - Tasks marked with `*` are optional and can be skipped for a faster MVP.
@@ -167,6 +190,7 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
 - Each task references requirement numbers from `requirements.md`.
 - Delivery tasks (2.7, 4.8, 5.3) and final verification (7.1) are required, not optional. Optional test tasks (2.6, 5.2) are included in the delivery when they were done.
 - Delivery follows Requirement 11. Never use force push, `--no-verify`, or bypass required checks.
+- Task 8 is an infrastructure follow-up outside the chart scope. It touches CI scripts and Terraform only, and no frontend code.
 
 ## Task Dependency Graph
 
@@ -183,7 +207,9 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
     { "id": 7, "tasks": ["5.1"] },
     { "id": 8, "tasks": ["5.2"] },
     { "id": 9, "tasks": ["5.3"] },
-    { "id": 10, "tasks": ["7.1"] }
+    { "id": 10, "tasks": ["7.1"] },
+    { "id": 11, "tasks": ["8.1"] },
+    { "id": 12, "tasks": ["8.2"] }
   ]
 }
 ```
