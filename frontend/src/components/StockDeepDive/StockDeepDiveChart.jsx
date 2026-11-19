@@ -2,110 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import ChartContainer from '../Charts/ChartContainer';
 import ChartDataTable from '../Charts/ChartDataTable';
 import ChartErrorBoundary from '../Charts/ChartErrorBoundary';
-import useChartSeries from '../../hooks/useChartSeries';
-import {
-  formatCandleData,
-  formatVolumeData,
-  generateSampleOHLCV,
-  formatCurrency,
-} from '../../utils/charts/formatters';
-import { colors, seriesColors } from '../../utils/charts/theme';
+import { generateSampleOHLCV, formatCurrency } from '../../utils/charts/formatters';
 import PropTypes from 'prop-types';
-
-function CandleStickChartComponent({ signal, ohlcvData }) {
-  const {
-    addSeries,
-    applyPriceScaleOptions,
-    createPriceLine,
-    fitContent,
-    removeSeries,
-  } = useChartSeries();
-
-  useEffect(() => {
-    if (!ohlcvData.length) return undefined;
-
-    const candles = formatCandleData(ohlcvData);
-    const volume = formatVolumeData(ohlcvData);
-    const candleResult = addSeries('candlestick', seriesColors.candlestick, candles);
-    const volumeResult = addSeries(
-      'histogram',
-      {
-        priceFormat: { type: 'volume' },
-        priceScaleId: 'volume',
-      },
-      volume
-    );
-
-    if (!candleResult) return undefined;
-
-    applyPriceScaleOptions('volume', {
-      scaleMargins: {
-        top: 0.78,
-        bottom: 0,
-      },
-    });
-
-    if (signal?.entry_zone) {
-      createPriceLine(candleResult.seriesId, {
-        price: signal.entry_zone.low,
-        color: colors.warning,
-        lineWidth: 2,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: 'Entry Low',
-      });
-      createPriceLine(candleResult.seriesId, {
-        price: signal.entry_zone.high,
-        color: colors.warning,
-        lineWidth: 2,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: 'Entry High',
-      });
-    }
-
-    if (signal?.stop_loss) {
-      createPriceLine(candleResult.seriesId, {
-        price: signal.stop_loss,
-        color: colors.down,
-        lineWidth: 2,
-        lineStyle: 0,
-        axisLabelVisible: true,
-        title: 'Stop Loss',
-      });
-    }
-
-    if (signal?.take_profit) {
-      createPriceLine(candleResult.seriesId, {
-        price: signal.take_profit,
-        color: colors.up,
-        lineWidth: 2,
-        lineStyle: 0,
-        axisLabelVisible: true,
-        title: 'Take Profit',
-      });
-    }
-
-    fitContent();
-
-    return () => {
-      if (volumeResult?.seriesId) removeSeries(volumeResult.seriesId);
-      if (candleResult?.seriesId) removeSeries(candleResult.seriesId);
-    };
-  }, [
-    addSeries,
-    applyPriceScaleOptions,
-    createPriceLine,
-    fitContent,
-    ohlcvData,
-    removeSeries,
-    signal?.entry_zone,
-    signal?.stop_loss,
-    signal?.take_profit,
-  ]);
-
-  return null;
-}
+import CandlestickLayer from './CandlestickLayer';
+import VolumeLayer from './VolumeLayer';
 
 const percent = (value = 0) => `${Math.round(value * 100)}%`;
 
@@ -155,7 +55,7 @@ function StockDeepDive({ signal, symbol = 'MSFT', priceData }) {
     return () => window.clearTimeout(timer);
   }, [symbol, signal]);
 
-  const hasPriceData = ohlcvData.length >= 60;
+  const hasPriceData = ohlcvData.length > 0;
   const latestCandle = ohlcvData[ohlcvData.length - 1];
 
   return (
@@ -188,7 +88,8 @@ function StockDeepDive({ signal, symbol = 'MSFT', priceData }) {
                 role="img"
                 width={800}
               >
-                <CandleStickChartComponent ohlcvData={ohlcvData} signal={signal} />
+                <CandlestickLayer ohlcvData={ohlcvData} signal={signal} />
+                <VolumeLayer ohlcvData={ohlcvData} />
               </ChartContainer>
             </div>
             <ChartDataTable
@@ -270,11 +171,6 @@ StockDeepDive.propTypes = {
   signal: PropTypes.object,
   symbol: PropTypes.string,
   priceData: PropTypes.array,
-};
-
-CandleStickChartComponent.propTypes = {
-  signal: PropTypes.object,
-  ohlcvData: PropTypes.array.isRequired,
 };
 
 export default StockDeepDive;
