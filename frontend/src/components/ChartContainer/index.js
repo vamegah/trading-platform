@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import PropTypes from 'prop-types';
 import { createChart } from '@tradingview/lightweight-charts';
 import { CHART_OPTIONS } from '../../styles/chart-theme';
+import { recordChartPerformance } from '../../utils/charts/monitoring';
 import './ChartContainer.css';
 
 const RESIZE_DEBOUNCE_MS = 50;
@@ -46,8 +47,14 @@ function ChartContainer({ height = 260, width, options, ariaLabel, children }) {
       height: sizeRef.current.height || el.clientHeight || 0,
     });
 
+    const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const chart = createChart(el, { ...mergeOptions(CHART_OPTIONS, optionsRef.current), ...measure() });
     chartRef.current = chart;
+    recordChartPerformance({
+      component: 'ChartContainer',
+      durationMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAt,
+      metadata: { phase: 'mount' },
+    });
     setReady(true);
 
     let observer = null;

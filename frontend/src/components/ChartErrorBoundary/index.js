@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { recordChartError } from '../../utils/charts/monitoring';
 
 export default class ChartErrorBoundary extends Component {
   state = { hasError: false };
@@ -9,6 +10,12 @@ export default class ChartErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('ChartErrorBoundary caught an error:', error, info);
+    recordChartError({
+      component: 'ChartErrorBoundary',
+      message: error?.message,
+      stack: error?.stack,
+      errorInfo: info?.componentStack,
+    });
   }
 
   render() {

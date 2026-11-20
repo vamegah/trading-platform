@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const { resizeDebounceMs, disposesChartOnUnmount } = require('./chart-gate-helpers.cjs');
 
 const root = path.resolve(__dirname, '..');
 const evidenceDir = path.join(root, 'release-evidence');
@@ -10,7 +11,7 @@ const reportPath = path.join(evidenceDir, 'performance-report.json');
 const distAssetsDir = path.join(root, 'dist', 'assets');
 
 function read(relativePath) {
-  return fs.readFileSync(path.join(root, relativePath), 'utf8');
+  return relativePath.split('|').map((part) => fs.readFileSync(path.join(root, part), 'utf8')).join('\n');
 }
 
 function size(assetPath) {
@@ -73,21 +74,25 @@ if (!fs.existsSync(distAssetsDir)) {
   });
 }
 
-const chartContainer = read('src/components/Charts/ChartContainer.jsx');
-check('chart-container-cleanup', /chartRef\.current\.remove\(\)/.test(chartContainer));
-check('chart-container-debounced-resize', /setTimeout\(\(\) => \{[\s\S]*\}, 100\)/.test(chartContainer));
+const chartContainer = read('src/components/ChartContainer/index.js');
+const resizeDebounce = resizeDebounceMs(chartContainer);
+check('chart-container-cleanup', disposesChartOnUnmount(chartContainer));
+check('chart-container-debounced-resize', resizeDebounce > 0 && resizeDebounce <= 100, {
+  actualMs: resizeDebounce,
+  budgetMs: 100,
+});
 check('chart-render-performance-monitoring', /recordChartPerformance/.test(chartContainer));
 
 const chartTaskFiles = [
-  'src/components/Charts/ChartContainer.jsx',
-  'src/components/Charts/AgentScoreChart.jsx',
-  'src/components/Charts/ChartErrorBoundary.jsx',
+  'src/components/ChartContainer/index.js',
+  'src/components/AgentScoreChart/index.js',
+  'src/components/ChartErrorBoundary/index.js',
   'src/components/StockDeepDive/StockDeepDiveChart.jsx',
-  'src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx',
-  'src/components/BacktestViewer/BacktestViewerEnhanced.jsx',
-  'src/components/PortfolioHealth/PortfolioHealthEnhanced.jsx',
-  'src/components/StressTest/StressTestEnhanced.jsx',
-  'src/components/DiscoveryScanner/DiscoveryScannerEnhanced.jsx',
+  'src/components/ExplainabilityPanel/index.js',
+  'src/components/BacktestViewer/index.js',
+  'src/components/PortfolioHealth/index.js',
+  'src/components/StressTest/index.js|src/components/StressTest/StressBarChart.js|src/components/StressTest/ScenarioSelector.js',
+  'src/components/DiscoveryScanner/index.js',
 ];
 
 for (const file of chartTaskFiles) {
@@ -95,7 +100,7 @@ for (const file of chartTaskFiles) {
   check(`${file}:no-inline-style-objects`, !/style=\{\{/.test(content));
 }
 
-check('backtest-no-random-fallback', !/Math\.random|Array\.from\(\{ length: 60/.test(read('src/components/BacktestViewer/BacktestViewerEnhanced.jsx')));
+check('backtest-no-random-fallback', !/Math\.random|Array\.from\(\{ length: 60/.test(read('src/components/BacktestViewer/index.js')));
 check('deterministic-sample-ohlcv', !/Math\.random/.test(read('src/utils/charts/formatters.js')));
 check('runtime-sample-cap', /MAX_RECORDS = 75/.test(read('src/utils/charts/monitoring.js')));
 

@@ -43,7 +43,7 @@ function check(name, passed, details = {}) {
   });
 }
 
-const theme = read('src/utils/charts/theme.js');
+const theme = read('src/styles/chart-theme.js');
 const css = read('src/index.css');
 const palette = {
   up: '#22c55e',
@@ -51,7 +51,8 @@ const palette = {
   warning: '#f59e0b',
   neutral: '#94a3b8',
   text: '#e2e8f0',
-  textSecondary: '#d1d5db',
+  orange: '#f97316',
+  accent: '#60a5fa',
 };
 
 for (const [name, color] of Object.entries(palette)) {
@@ -66,31 +67,31 @@ for (const [name, color] of Object.entries(palette)) {
 const surfaces = [
   {
     name: 'StockDeepDive',
-    file: 'src/components/StockDeepDive/StockDeepDiveChart.jsx',
+    file: 'src/components/StockDeepDive/StockDeepDiveChart.jsx|src/components/ChartContainer/index.js',
     fallback: /Price data unavailable|ChartDataTable/,
     errorBoundary: true,
   },
   {
     name: 'ExplainabilityPanel',
-    file: 'src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx',
+    file: 'src/components/ExplainabilityPanel/index.js|src/components/AgentScoreChart/index.js|src/components/ChartContainer/index.js',
     fallback: /Distribution data unavailable|Agent scores unavailable|ChartDataTable/,
     errorBoundary: true,
   },
   {
     name: 'BacktestViewer',
-    file: 'src/components/BacktestViewer/BacktestViewerEnhanced.jsx|src/components/ChartContainer/index.js',
+    file: 'src/components/BacktestViewer/index.js|src/components/ChartContainer/index.js',
     fallback: /Equity curve data unavailable|ChartDataTable/,
     errorBoundary: true,
   },
   {
     name: 'PortfolioHealth',
-    file: 'src/components/PortfolioHealth/PortfolioHealthEnhanced.jsx',
+    file: 'src/components/PortfolioHealth/index.js|src/components/AgentScoreChart/index.js',
     fallback: /Risk data unavailable|ChartDataTable/,
     errorBoundary: true,
   },
   {
     name: 'StressTest',
-    file: 'src/components/StressTest/StressTestEnhanced.jsx',
+    file: 'src/components/StressTest/index.js|src/components/StressTest/StressBarChart.js|src/components/StressTest/ScenarioSelector.js',
     fallback: /Stress test data unavailable|ChartDataTable/,
     errorBoundary: true,
   },
@@ -112,8 +113,8 @@ for (const surface of surfaces) {
   }
 }
 
-const chartDataTable = read('src/components/Charts/ChartDataTable.jsx');
-const errorBoundary = read('src/components/Charts/ChartErrorBoundary.jsx');
+const chartDataTable = read('src/components/ChartDataTable/index.js');
+const errorBoundary = read('src/components/ChartErrorBoundary/index.js');
 const monitoring = read('src/utils/charts/monitoring.js');
 
 check('screen-reader-data-table', /className="sr-only"/.test(chartDataTable) && /\.sr-only/.test(css));
