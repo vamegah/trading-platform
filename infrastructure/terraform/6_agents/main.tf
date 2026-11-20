@@ -199,14 +199,27 @@ resource "aws_s3_bucket" "lambda_packages" {
   }
 }
 
+# Local zip for each agent, built in its source folder by
+#   bash .github/scripts/ci/build_one_lambda.sh services/agents/<folder> <agent>
+# path.module is infrastructure/terraform/6_agents, so ../../.. is the repo root.
+locals {
+  agent_zips = {
+    planner    = "${path.module}/../../../backend/services/agents/portfolio_planner/planner_lambda.zip"
+    tagger     = "${path.module}/../../../backend/services/agents/instrument_tagger/tagger_lambda.zip"
+    reporter   = "${path.module}/../../../backend/services/agents/report_writer/reporter_lambda.zip"
+    charter    = "${path.module}/../../../backend/services/agents/chart_maker/charter_lambda.zip"
+    retirement = "${path.module}/../../../backend/services/agents/retirement_specialist/retirement_lambda.zip"
+  }
+}
+
 # Upload Lambda packages to S3
 resource "aws_s3_object" "lambda_packages" {
-  for_each = toset(["planner", "tagger", "reporter", "charter", "retirement"])
+  for_each = local.agent_zips
 
   bucket = aws_s3_bucket.lambda_packages.id
   key    = "${each.key}/${each.key}_lambda.zip"
-  source = "${path.module}/../../backend/${each.key}/${each.key}_lambda.zip"
-  etag   = fileexists("${path.module}/../../backend/${each.key}/${each.key}_lambda.zip") ? filemd5("${path.module}/../../backend/${each.key}/${each.key}_lambda.zip") : null
+  source = each.value
+  etag   = fileexists(each.value) ? filemd5(each.value) : null
 
   tags = {
     Project = "alex"
@@ -227,7 +240,7 @@ resource "aws_lambda_function" "planner" {
   # Using S3 for deployment package (>50MB)
   s3_bucket        = aws_s3_bucket.lambda_packages.id
   s3_key           = aws_s3_object.lambda_packages["planner"].key
-  source_code_hash = fileexists("${path.module}/../../backend/planner/planner_lambda.zip") ? filebase64sha256("${path.module}/../../backend/planner/planner_lambda.zip") : null
+  source_code_hash = fileexists(local.agent_zips["planner"]) ? filebase64sha256(local.agent_zips["planner"]) : null
 
   handler     = "lambda_handler.lambda_handler"
   runtime     = "python3.12"
@@ -278,7 +291,7 @@ resource "aws_lambda_function" "tagger" {
   # Using S3 for deployment package (>50MB)
   s3_bucket        = aws_s3_bucket.lambda_packages.id
   s3_key           = aws_s3_object.lambda_packages["tagger"].key
-  source_code_hash = fileexists("${path.module}/../../backend/tagger/tagger_lambda.zip") ? filebase64sha256("${path.module}/../../backend/tagger/tagger_lambda.zip") : null
+  source_code_hash = fileexists(local.agent_zips["tagger"]) ? filebase64sha256(local.agent_zips["tagger"]) : null
 
   handler     = "lambda_handler.lambda_handler"
   runtime     = "python3.12"
@@ -318,7 +331,7 @@ resource "aws_lambda_function" "reporter" {
   # Using S3 for deployment package (>50MB)
   s3_bucket        = aws_s3_bucket.lambda_packages.id
   s3_key           = aws_s3_object.lambda_packages["reporter"].key
-  source_code_hash = fileexists("${path.module}/../../backend/reporter/reporter_lambda.zip") ? filebase64sha256("${path.module}/../../backend/reporter/reporter_lambda.zip") : null
+  source_code_hash = fileexists(local.agent_zips["reporter"]) ? filebase64sha256(local.agent_zips["reporter"]) : null
 
   handler     = "lambda_handler.lambda_handler"
   runtime     = "python3.12"
@@ -359,7 +372,7 @@ resource "aws_lambda_function" "charter" {
   # Using S3 for deployment package (>50MB)
   s3_bucket        = aws_s3_bucket.lambda_packages.id
   s3_key           = aws_s3_object.lambda_packages["charter"].key
-  source_code_hash = fileexists("${path.module}/../../backend/charter/charter_lambda.zip") ? filebase64sha256("${path.module}/../../backend/charter/charter_lambda.zip") : null
+  source_code_hash = fileexists(local.agent_zips["charter"]) ? filebase64sha256(local.agent_zips["charter"]) : null
 
   handler     = "lambda_handler.lambda_handler"
   runtime     = "python3.12"
@@ -399,7 +412,7 @@ resource "aws_lambda_function" "retirement" {
   # Using S3 for deployment package (>50MB)
   s3_bucket        = aws_s3_bucket.lambda_packages.id
   s3_key           = aws_s3_object.lambda_packages["retirement"].key
-  source_code_hash = fileexists("${path.module}/../../backend/retirement/retirement_lambda.zip") ? filebase64sha256("${path.module}/../../backend/retirement/retirement_lambda.zip") : null
+  source_code_hash = fileexists(local.agent_zips["retirement"]) ? filebase64sha256(local.agent_zips["retirement"]) : null
 
   handler     = "lambda_handler.lambda_handler"
   runtime     = "python3.12"

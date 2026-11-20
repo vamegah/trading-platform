@@ -144,7 +144,7 @@ def clean_local_artifacts():
     print("\n🧹 Cleaning up local artifacts...")
 
     artifacts = [
-        Path(__file__).parent.parent / "backend" / "api" / "api_lambda.zip",
+        Path(__file__).parent.parent / "backend" / "api_gateway" / "api_lambda.zip",
         Path(__file__).parent.parent / "frontend" / "out",
         Path(__file__).parent.parent / "frontend" / ".next",
     ]

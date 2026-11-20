@@ -38,3 +38,8 @@ config/*.secret.env
 Thumbs.db
 .idea/
 .vscode/
+
+# Lambda build artifacts (written in each source folder by
+# .github/scripts/ci/build_one_lambda.sh and the per-service packagers)
+backend/**/*_lambda.zip
+backend/**/lambda_function.zip

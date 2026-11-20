@@ -147,16 +147,21 @@ resource "aws_iam_role_policy" "lambda_policy" {
 #   - Structured JSON logging for CloudWatch Logs Insights
 #   - Metadata size-guarding (< 2 KB S3 Vectors cap)
 #
-# Build the package from the trading-platform repo:
-#   cd backend/services/knowledge_base/ingestion
-#   uv run package.py          # produces lambda_function.zip
+# Build the package from the repo root:
+#   bash .github/scripts/ci/build_one_lambda.sh services/knowledge_base/ingestion ingest
+# which writes backend/services/knowledge_base/ingestion/lambda_function.zip.
+
+locals {
+  # path.module is infrastructure/terraform/3_ingestion, so ../../.. is the repo root.
+  ingest_zip = "${path.module}/../../../backend/services/knowledge_base/ingestion/lambda_function.zip"
+}
 
 resource "aws_lambda_function" "ingest" {
   function_name = "alex-ingest"
   role          = aws_iam_role.lambda_role.arn
 
-  filename         = "${path.module}/../../backend/services/knowledge_base/ingestion/lambda_function.zip"
-  source_code_hash = fileexists("${path.module}/../../backend/services/knowledge_base/ingestion/lambda_function.zip") ? filebase64sha256("${path.module}/../../backend/services/knowledge_base/ingestion/lambda_function.zip") : null
+  filename         = local.ingest_zip
+  source_code_hash = fileexists(local.ingest_zip) ? filebase64sha256(local.ingest_zip) : null
 
   handler     = "ingest_s3Vector.lambda_handler"
   runtime     = "python3.12"

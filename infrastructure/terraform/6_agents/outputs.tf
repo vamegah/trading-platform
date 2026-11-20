@@ -36,14 +36,14 @@ output "setup_instructions" {
     
     To test the system:
     1. First, package and deploy each agent's code:
-       cd backend/planner && uv run package_docker.py --deploy
-       cd backend/tagger && uv run package_docker.py --deploy
-       cd backend/reporter && uv run package_docker.py --deploy
-       cd backend/charter && uv run package_docker.py --deploy
-       cd backend/retirement && uv run package_docker.py --deploy
+       cd backend/services/agents/portfolio_planner && uv run package_docker.py --deploy
+       cd backend/services/agents/instrument_tagger && uv run package_docker.py --deploy
+       cd backend/services/agents/report_writer && uv run package_docker.py --deploy
+       cd backend/services/agents/chart_maker && uv run package_docker.py --deploy
+       cd backend/services/agents/retirement_specialist && uv run package_docker.py --deploy
     
     2. Run the full integration test:
-       cd backend/planner
+       cd backend/services/agents/portfolio_planner
        uv run run_full_test.py
     
     3. Monitor progress in CloudWatch Logs:

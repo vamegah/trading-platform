@@ -38,6 +38,11 @@ data "terraform_remote_state" "agents" {
 locals {
   name_prefix = "alex"
 
+  # Built by scripts/deploy.py or
+  # bash .github/scripts/ci/build_one_lambda.sh api_gateway api
+  # path.module is infrastructure/terraform/7_frontend, so ../../.. is the repo root.
+  api_zip = "${path.module}/../../../backend/api_gateway/api_lambda.zip"
+
   common_tags = {
     Project   = "alex"
     Part      = "7_frontend"
@@ -191,11 +196,11 @@ resource "aws_iam_role_policy" "api_lambda_invoke" {
 
 # Lambda function for API
 resource "aws_lambda_function" "api" {
-  filename         = "${path.module}/../../backend/api/api_lambda.zip"
+  filename         = local.api_zip
   function_name    = "${local.name_prefix}-api"
   role             = aws_iam_role.api_lambda_role.arn
   handler          = "lambda_handler.handler"
-  source_code_hash = fileexists("${path.module}/../../backend/api/api_lambda.zip") ? filebase64sha256("${path.module}/../../backend/api/api_lambda.zip") : null
+  source_code_hash = fileexists(local.api_zip) ? filebase64sha256(local.api_zip) : null
   runtime          = "python3.12"
   architectures    = ["x86_64"]
   timeout          = 30
