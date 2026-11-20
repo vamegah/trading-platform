@@ -2,7 +2,10 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
-vi.mock('../../components/Charts/ChartContainer', () => ({ default: () => null }));
+vi.mock('../../components/ChartContainer', async () => {
+  const { createContext } = await import('react');
+  return { default: () => null, ChartContext: createContext(null) };
+});
 
 import ExplainabilityPanel from '../../components/ExplainabilityPanel';
 import { CHART_THEME } from '../../styles/chart-theme';

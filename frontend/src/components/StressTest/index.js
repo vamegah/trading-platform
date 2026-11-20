@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ChartDataTable from '../ChartDataTable';
 import ChartErrorBoundary from '../ChartErrorBoundary';
 import ScenarioSelector from './ScenarioSelector';
 import StressBarChart from './StressBarChart';
@@ -73,7 +74,25 @@ function StressTest() {
             Loading stress test data...
           </div>
         ) : positions.length > 0 ? (
-          <StressBarChart positions={positions} />
+          <>
+            <StressBarChart positions={positions} />
+            <ChartDataTable
+              caption="Stress test position comparison"
+              columns={[
+                { key: 'symbol', label: 'Symbol' },
+                { key: 'current', label: 'Current value' },
+                { key: 'stressed', label: 'Stressed value' },
+                { key: 'pnl', label: 'P/L percent' },
+              ]}
+              rows={positions.map((p) => ({
+                id: p.symbol,
+                symbol: p.symbol,
+                current: formatCurrency(p.current_value),
+                stressed: formatCurrency(p.stressed_value),
+                pnl: `${Number(p.pnl_percent || 0).toFixed(1)}%`,
+              }))}
+            />
+          </>
         ) : (
           <p className="chart-empty">Stress test data unavailable</p>
         )}

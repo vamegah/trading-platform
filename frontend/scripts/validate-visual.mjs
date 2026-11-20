@@ -31,12 +31,12 @@ check('responsive-feedback-grid', /@media \(max-width: 920px\)[\s\S]*\.feedback-
 check('svg-label-classes', /\.chart-svg-label/.test(css) && /\.chart-svg-value/.test(css));
 
 const chartFiles = [
-  'src/components/Charts/AgentScoreChart.jsx',
+  'src/components/AgentScoreChart/index.js',
   'src/components/StockDeepDive/StockDeepDiveChart.jsx',
-  'src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx',
-  'src/components/BacktestViewer/BacktestViewerEnhanced.jsx',
-  'src/components/PortfolioHealth/PortfolioHealthEnhanced.jsx',
-  'src/components/StressTest/StressTestEnhanced.jsx',
+  'src/components/ExplainabilityPanel/index.js',
+  'src/components/BacktestViewer/index.js',
+  'src/components/PortfolioHealth/index.js',
+  'src/components/StressTest/index.js|src/components/StressTest/StressBarChart.js|src/components/StressTest/ScenarioSelector.js',
   'src/components/DiscoveryScanner/index.js',
 ];
 
@@ -44,11 +44,23 @@ for (const file of chartFiles) {
   check(`${file}:no-inline-style-objects`, !/style=\{\{/.test(read(file)), { file });
 }
 
-check('agent-score-svg-responsive', /width="100%"/.test(read('src/components/Charts/AgentScoreChart.jsx')));
-check('stress-svg-responsive', /width="100%"/.test(read('src/components/StressTest/StressTestEnhanced.jsx')));
+{
+  // Responsive when the SVG either sets width="100%" or scales via viewBox with a
+  // CSS class that sets width: 100%.
+  const agentScore = read('src/components/AgentScoreChart/index.js');
+  const agentScoreCss = read('src/components/AgentScoreChart/AgentScoreChart.css');
+  check(
+    'agent-score-svg-responsive',
+    /width="100%"/.test(agentScore) ||
+      (/viewBox=/.test(agentScore) &&
+        /className="agent-score-chart"/.test(agentScore) &&
+        /\.agent-score-chart\s*\{[^}]*\bwidth:\s*100%/.test(agentScoreCss))
+  );
+}
+check('stress-svg-responsive', /width="100%"/.test(read('src/components/StressTest/index.js|src/components/StressTest/StressBarChart.js|src/components/StressTest/ScenarioSelector.js')));
 check('scanner-confidence-svg-responsive', /viewBox="0 0 100 8"/.test(read('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js')));
 check('stock-deep-dive-text-rows-preserved', /<div className="row">/.test(read('src/components/StockDeepDive/StockDeepDiveChart.jsx')));
-check('backtest-paper-execute-preserved', /Paper execute/.test(read('src/components/BacktestViewer/BacktestViewerEnhanced.jsx')));
+check('backtest-paper-execute-preserved', /Paper execute/.test(read('src/components/BacktestViewer/index.js')));
 
 const failed = checks.filter((item) => !item.passed);
 const report = {

@@ -37,8 +37,8 @@ check('dist-assets-exist', existsSync(assetDir) && readdirSync(assetDir).some((f
 
 const monitoring = read('src/utils/charts/monitoring.js');
 const app = read('src/App.js');
-check('chart-error-monitoring-enabled', /chart-render-errors/.test(monitoring) && /recordChartError/.test(read('src/components/Charts/ChartErrorBoundary.jsx')));
-check('chart-performance-monitoring-enabled', /recordChartPerformance/.test(read('src/components/Charts/ChartContainer.jsx')));
+check('chart-error-monitoring-enabled', /chart-render-errors/.test(monitoring) && /recordChartError/.test(read('src/components/ChartErrorBoundary/index.js')));
+check('chart-performance-monitoring-enabled', /recordChartPerformance/.test(read('src/components/ChartContainer/index.js')));
 check('chart-feedback-mounted', /ChartFeedbackPanel/.test(app) && /chart-feedback/.test(monitoring));
 check('monitoring-send-beacon-fallback', /sendBeacon/.test(monitoring) && /localStorage/.test(monitoring));
 

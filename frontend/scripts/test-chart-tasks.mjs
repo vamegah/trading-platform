@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import gateHelpers from './chart-gate-helpers.cjs';
+
+const { resizeDebounceMs, disposesChartOnUnmount } = gateHelpers;
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relativePath) => relativePath.split('|').map((part) => readFileSync(join(root, part), 'utf8')).join('\n');
@@ -50,11 +53,14 @@ for (const forbidden of ['chart.js', 'recharts', 'd3']) {
 }
 
 assertContains('vite.config.js', /"@tradingview\/lightweight-charts": "lightweight-charts"/, 'Vite must resolve the chart alias');
-assertContains('src/components/Charts/ChartContainer.jsx', /createChart/, 'ChartContainer must create charts');
-assertContains('src/components/Charts/ChartContainer.jsx', /chartRef\.current\.remove\(\)/, 'ChartContainer must clean up charts');
-assertContains('src/components/Charts/ChartContainer.jsx', /setTimeout\(\(\) => \{[\s\S]*\}, 100\)/, 'ChartContainer must debounce resize at 100 ms');
-assertContains('src/components/Charts/ChartContainer.jsx', /recordChartPerformance/, 'ChartContainer must record render timing');
-assertContains('src/components/Charts/ChartErrorBoundary.jsx', /recordChartError/, 'Chart errors must be monitored');
+assertContains('src/components/ChartContainer/index.js', /createChart/, 'ChartContainer must create charts');
+assert.ok(disposesChartOnUnmount(read('src/components/ChartContainer/index.js')), 'ChartContainer must call chart.remove() on unmount');
+{
+  const debounce = resizeDebounceMs(read('src/components/ChartContainer/index.js'));
+  assert.ok(debounce > 0 && debounce <= 100, `ChartContainer must debounce ResizeObserver resize within 100 ms (found ${debounce})`);
+}
+assertContains('src/components/ChartContainer/index.js', /recordChartPerformance/, 'ChartContainer must record render timing');
+assertContains('src/components/ChartErrorBoundary/index.js', /recordChartError/, 'Chart errors must be monitored');
 assertContains('src/utils/charts/monitoring.js', /chart-render-errors/, 'Chart error storage key must exist');
 assertContains('src/utils/charts/monitoring.js', /chart-performance-samples/, 'Chart performance storage key must exist');
 assertContains('src/utils/charts/monitoring.js', /chart-feedback/, 'Chart feedback storage key must exist');
@@ -67,15 +73,22 @@ assertContains('src/hooks/useChartSeries.js', /LineSeries/, 'useChartSeries must
 assertContains('src/hooks/useChartSeries.js', /createSeriesMarkers/, 'useChartSeries must support trade markers');
 
 const chartTaskFiles = [
-  'src/components/Charts/ChartContainer.jsx',
-  'src/components/Charts/AgentScoreChart.jsx',
-  'src/components/Charts/ChartErrorBoundary.jsx',
+  'src/components/ChartContainer/index.js',
+  'src/components/AgentScoreChart/index.js',
+  'src/components/ChartErrorBoundary/index.js',
+  'src/components/ChartDataTable/index.js',
   'src/components/StockDeepDive/StockDeepDiveChart.jsx',
-  'src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx',
-  'src/components/BacktestViewer/BacktestViewerEnhanced.jsx',
-  'src/components/PortfolioHealth/PortfolioHealthEnhanced.jsx',
-  'src/components/StressTest/StressTestEnhanced.jsx',
+  'src/components/StockDeepDive/CandlestickLayer.jsx',
+  'src/components/StockDeepDive/VolumeLayer.jsx',
+  'src/components/ExplainabilityPanel/index.js',
+  'src/components/BacktestViewer/index.js',
+  'src/components/PortfolioHealth/index.js',
+  'src/components/StressTest/index.js',
+  'src/components/StressTest/StressBarChart.js',
+  'src/components/StressTest/ScenarioSelector.js',
   'src/components/DiscoveryScanner/index.js',
+  'src/components/DiscoveryScanner/ConfidenceBar.js',
+  'src/components/DiscoveryScanner/SignalIndicator.js',
 ];
 
 for (const file of chartTaskFiles) {
@@ -89,23 +102,23 @@ assertContains('src/components/StockDeepDive/CandlestickLayer.jsx', /Entry High/
 assertContains('src/components/StockDeepDive/CandlestickLayer.jsx', /Stop Loss/, 'StockDeepDive must create stop-loss line');
 assertContains('src/components/StockDeepDive/CandlestickLayer.jsx', /Take Profit/, 'StockDeepDive must create take-profit line');
 
-assertContains('src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx', /ProbabilityDistributionChart/, 'Explainability must include probability chart');
-assertContains('src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx', /Distribution data unavailable/, 'Explainability must expose distribution fallback');
-assertContains('src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx', /Agent scores unavailable/, 'Explainability must expose agent score fallback');
+assertContains('src/components/ExplainabilityPanel/index.js', /ProbabilityDistributionChart/, 'Explainability must include probability chart');
+assertContains('src/components/ExplainabilityPanel/index.js', /Distribution data unavailable/, 'Explainability must expose distribution fallback');
+assertContains('src/components/ExplainabilityPanel/index.js', /Agent scores unavailable/, 'Explainability must expose agent score fallback');
 
-assertContains('src/components/BacktestViewer/BacktestViewerEnhanced.jsx', /createSeriesMarkers/, 'BacktestViewer must set trade markers');
-assertContains('src/components/BacktestViewer/BacktestViewerEnhanced.jsx', /arrowUp/, 'BacktestViewer must render BUY markers');
-assertContains('src/components/BacktestViewer/BacktestViewerEnhanced.jsx', /arrowDown/, 'BacktestViewer must render SELL markers');
-assertContains('src/components/BacktestViewer/BacktestViewerEnhanced.jsx', /Equity curve data unavailable/, 'BacktestViewer must expose missing equity fallback');
-assertNotContains('src/components/BacktestViewer/BacktestViewerEnhanced.jsx', /Math\.random|Array\.from\(\{ length: 60/, 'BacktestViewer must not hide missing equity with random fallback data');
+assertContains('src/components/BacktestViewer/index.js', /createSeriesMarkers/, 'BacktestViewer must set trade markers');
+assertContains('src/components/BacktestViewer/index.js', /arrowUp/, 'BacktestViewer must render BUY markers');
+assertContains('src/components/BacktestViewer/index.js', /arrowDown/, 'BacktestViewer must render SELL markers');
+assertContains('src/components/BacktestViewer/index.js', /Equity curve data unavailable/, 'BacktestViewer must expose missing equity fallback');
+assertNotContains('src/components/BacktestViewer/index.js', /Math\.random|Array\.from\(\{ length: 60/, 'BacktestViewer must not hide missing equity with random fallback data');
 
-assertContains('src/components/PortfolioHealth/PortfolioHealthEnhanced.jsx', /Risk data unavailable/, 'PortfolioHealth must expose risk fallback');
-assertContains('src/components/PortfolioHealth/PortfolioHealthEnhanced.jsx', /Risk breach - position trading disabled/, 'PortfolioHealth must expose kill-switch breach label');
+assertContains('src/components/PortfolioHealth/index.js', /Risk data unavailable/, 'PortfolioHealth must expose risk fallback');
+assertContains('src/components/PortfolioHealth/index.js', /Risk breach - position trading disabled/, 'PortfolioHealth must expose kill-switch breach label');
 
 assertContains('src/services/api.js', /getStressTestScenarios/, 'API service must expose stress-test scenarios');
-assertContains('src/components/StressTest/StressTestEnhanced.jsx', /getStressTestScenarios/, 'StressTest must load scenarios from API');
-assertContains('src/components/StressTest/StressTestEnhanced.jsx', /Stress test data unavailable/, 'StressTest must expose empty-data fallback');
-assertNotContains('src/components/StressTest/StressTestEnhanced.jsx', /mockScenarios|In production, this would call/, 'StressTest must not use hardcoded scenario data');
+assertContains('src/components/StressTest/index.js|src/components/StressTest/StressBarChart.js|src/components/StressTest/ScenarioSelector.js', /getStressTestScenarios/, 'StressTest must load scenarios from API');
+assertContains('src/components/StressTest/index.js|src/components/StressTest/StressBarChart.js|src/components/StressTest/ScenarioSelector.js', /Stress test data unavailable/, 'StressTest must expose empty-data fallback');
+assertNotContains('src/components/StressTest/index.js|src/components/StressTest/StressBarChart.js|src/components/StressTest/ScenarioSelector.js', /mockScenarios|In production, this would call/, 'StressTest must not use hardcoded scenario data');
 
 assertContains('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js', /▲/, 'DiscoveryScanner must render BUY directional indicator');
 assertContains('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js', /▼/, 'DiscoveryScanner must render SELL directional indicator');
@@ -115,12 +128,12 @@ assertContains('src/components/DiscoveryScanner/index.js|src/components/Discover
 
 assertContains('src/index.css', /\.chart-frame/, 'Chart sizing must be class-based');
 assertContains('src/index.css', /\.sr-only/, 'Hidden chart data tables must be available');
-assertContains('src/components/Charts/ChartDataTable.jsx', /className="sr-only"/, 'ChartDataTable must render hidden data tables');
+assertContains('src/components/ChartDataTable/index.js', /className="sr-only"/, 'ChartDataTable must render hidden data tables');
 
-const theme = read('src/utils/charts/theme.js');
+const theme = read('src/styles/chart-theme.js');
 for (const color of ['#22c55e', '#ef4444', '#f59e0b', '#94a3b8', '#e2e8f0']) {
   assert.ok(contrastRatio('#0d0d0d', color) >= 3, `${color} must meet 3:1 contrast against chart background`);
-  assert.ok(theme.includes(color), `${color} must be documented in theme.js`);
+  assert.ok(theme.includes(color), `${color} must be documented in chart-theme.js`);
 }
 
 console.log('Chart task verification passed.');

@@ -1,3 +1,5 @@
+import { CHART_THEME } from '../../styles/chart-theme';
+
 /**
  * Chart utilities for data formatting and helpers
  */
@@ -28,7 +30,7 @@ export const formatVolumeData = (data = []) => {
   return data.map((point, index) => ({
     time: point.time ?? point.date ?? index,
     value: Number(point.volume ?? point.v ?? 0),
-    color: Number(point.close ?? point.c ?? 0) >= Number(point.open ?? point.o ?? 0) ? '#10b981' : '#ef4444',
+    color: Number(point.close ?? point.c ?? 0) >= Number(point.open ?? point.o ?? 0) ? CHART_THEME.green : CHART_THEME.red,
   }));
 };
 
@@ -52,7 +54,7 @@ export const formatAreaData = (data = []) => {
  * @param {string} label - Line label
  * @returns {Object} - Price line options
  */
-export const createPriceLine = (price, color = '#999999', label = 'Price') => ({
+export const createPriceLine = (price, color = CHART_THEME.grey, label = 'Price') => ({
   price,
   color,
   lineWidth: 2,
@@ -69,9 +71,9 @@ export const createPriceLine = (price, color = '#999999', label = 'Price') => ({
  * @returns {string} - Color hex code
  */
 export const getColorForValue = (value, thresholdBuy = 0.68, thresholdSell = 0.38) => {
-  if (value >= thresholdBuy) return '#10b981'; // Green
-  if (value <= thresholdSell) return '#ef4444'; // Red
-  return '#f59e0b'; // Amber
+  if (value >= thresholdBuy) return CHART_THEME.green;
+  if (value <= thresholdSell) return CHART_THEME.red;
+  return CHART_THEME.amber;
 };
 
 /**
@@ -146,25 +148,25 @@ export const probabilityScenarios = (distribution = {}) => [
     key: 'up_5pct_20d',
     label: 'Up 5%+',
     value: Number(distribution.up_5pct_20d || 0),
-    color: '#10b981',
+    color: CHART_THEME.green,
   },
   {
     key: 'down_3pct_20d',
     label: 'Down 3%+',
     value: Number(distribution.down_3pct_20d || 0),
-    color: '#ef4444',
+    color: CHART_THEME.red,
   },
   {
     key: 'flat_20d',
     label: 'Flat',
     value: Number(distribution.flat_20d || 0),
-    color: '#9ca3af',
+    color: CHART_THEME.grey,
   },
   {
     key: 'tail_loss_8pct_20d',
     label: 'Tail loss 8%+',
     value: Number(distribution.tail_loss_8pct_20d || 0),
-    color: '#f59e0b',
+    color: CHART_THEME.orange,
   },
 ];
 

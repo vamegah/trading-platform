@@ -13,9 +13,14 @@ function read(relativePath) {
 }
 
 function loadFormatterExports() {
-  const source = read('src/utils/charts/formatters.js')
-    .replace(/export const /g, 'const ')
-    .replace(/export default[\s\S]*$/m, '');
+  // formatters.js imports CHART_THEME; inline the theme module ahead of it so the
+  // real formatter code runs unmodified apart from ESM syntax.
+  const toScript = (code) =>
+    code
+      .replace(/^import [\s\S]*? from ['"][^'"]+['"];?\s*$/gm, '')
+      .replace(/export const /g, 'const ')
+      .replace(/export default[\s\S]*$/m, '');
+  const source = `${toScript(read('src/styles/chart-theme.js'))}\n${toScript(read('src/utils/charts/formatters.js'))}`;
   const module = { exports: {} };
   const context = { console, module, exports: module.exports, Math, Number, parseFloat };
 
@@ -101,10 +106,10 @@ const areaRows = formatters.formatAreaData([100000, 101250, 99750]);
 check('equity-curve-format', areaRows.length === 3 && areaRows.every((row) => row.value > 0));
 
 check('stock-deep-dive-uses-sixty-candles', /generateSampleOHLCV\(60/.test(read('src/components/StockDeepDive/StockDeepDiveChart.jsx')));
-check('explainability-uses-api-distribution', /probability_distribution/.test(read('src/components/ExplainabilityPanel/ExplainabilityPanelEnhanced.jsx')));
-check('backtest-requires-real-equity-curve', /Equity curve data unavailable/.test(read('src/components/BacktestViewer/BacktestViewerEnhanced.jsx')));
-check('portfolio-normalizes-risk-metrics', /normalizeMetric/.test(read('src/components/PortfolioHealth/PortfolioHealthEnhanced.jsx')));
-check('stress-test-uses-scenarios-api', /getStressTestScenarios/.test(read('src/components/StressTest/StressTestEnhanced.jsx')));
+check('explainability-uses-api-distribution', /probability_distribution/.test(read('src/components/ExplainabilityPanel/index.js')));
+check('backtest-requires-real-equity-curve', /Equity curve data unavailable/.test(read('src/components/BacktestViewer/index.js')));
+check('portfolio-normalizes-risk-metrics', /normalizeMetric/.test(read('src/components/PortfolioHealth/index.js')));
+check('stress-test-uses-scenarios-api', /getStressTestScenarios/.test(read('src/components/StressTest/index.js|src/components/StressTest/StressBarChart.js|src/components/StressTest/ScenarioSelector.js')));
 check('scanner-clamps-confidence-values', /Math\.max\(0, Math\.min\(100/.test(read('src/components/DiscoveryScanner/index.js|src/components/DiscoveryScanner/ConfidenceBar.js|src/components/DiscoveryScanner/SignalIndicator.js')));
 
 const failed = checks.filter((item) => !item.passed);
