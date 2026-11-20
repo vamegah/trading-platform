@@ -27,7 +27,7 @@ jobs:
           - backend/services/agents/researcher_agent
           - backend/services/scheduler
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: astral-sh/setup-uv@v3
 
@@ -56,7 +56,7 @@ jobs:
   frontend-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
@@ -85,7 +85,7 @@ jobs:
           - 7_frontend
           - 8_enterprise
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
       - name: Terraform init
         working-directory: infrastructure/terraform/${{ matrix.stack }}
