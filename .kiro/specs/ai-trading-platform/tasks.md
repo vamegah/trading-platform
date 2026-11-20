@@ -74,7 +74,7 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
 - [x] 3. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [~] 4. Component integrations
+- [x] 4. Component integrations
   - [x] 4.1 StockDeepDive candlestick and volume chart
     - In `frontend/src/components/StockDeepDive/`, add `CandlestickLayer` and `VolumeLayer` (using `useChartSeries`) and render them inside `ChartContainer` wrapped in `ChartErrorBoundary`, wired through `index.js`.
     - Show at least 60 OHLCV candles. Put volume bars on a separate price scale below. Source OHLCV from the existing path in `StockDeepDiveChart.jsx` or `api.js`.
@@ -119,7 +119,7 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
     - Use both in the result rows in `DiscoveryScanner/index.js`. Keep all columns and filters, and render the "Run a scan to rank the universe." row with no chart elements when there are no results.
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-  - [-] 4.8 Deliver via branch, PR, and passing workflows
+  - [x] 4.8 Deliver via branch, PR, and passing workflows
     - Start only after 2.7 has merged. Run `git fetch origin`, `git checkout main`, `git pull --ff-only origin main`, then `git checkout -b feat/t4-component-chart-integrations` (or one branch per wave or component group if delivering in smaller units, such as `feat/t4-1-stock-deep-dive-chart`). Commit the work from 4.1-4.7.
     - Push with `git push -u origin <branch>`, open the PR with `gh pr create --base main --head <branch>`, and run `gh pr checks <pr> --watch`.
     - Fix failing checks with new commits and no force push or bypass. Stop and report after 3 consecutive failures of the same check.
@@ -128,19 +128,19 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
     - Watch main workflows with `gh run list --branch main --limit 5` and `gh run watch <run-id>`. Fix failures through a new unit of work.
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10, 11.11, 11.12, 11.13, 11.14_
 
-- [ ] 5. Theming, accessibility, and cleanup
-  - [ ] 5.1 Audit theming, accessibility, and layout across all chart areas
+- [x] 5. Theming, accessibility, and cleanup
+  - [x] 5.1 Audit theming, accessibility, and layout across all chart areas
     - Confirm every chart area is wrapped in `ChartErrorBoundary` and has an `ariaLabel` plus a text alternative (the existing numeric rows or a visually hidden table).
     - Confirm all charts take colors from `styles/chart-theme.js`, use no new inline styles that override `.analysis-grid` or `.panel`, and stay inside those classes.
     - Remove or redirect superseded files (`components/Charts/*`, `*Enhanced.jsx`, `utils/charts/theme.js`) only when no import remains, and make sure `npm run build` passes.
     - _Requirements: 1.2, 10.1, 10.2, 10.3, 10.4, 10.5_
 
-  - [ ] 5.2 Write integration tests for chart-bearing components
+  - [x] 5.2 Write integration tests for chart-bearing components
     - Extend `frontend/src/__tests__/integration/ChartIntegration.test.js` with mocked API data covering, for each of the six components, the loading placeholder, the populated chart, and the specified unavailable message.
     - Cover the kill-switch color change in PortfolioHealth, the scenario switch in StressTest, and the confidence color thresholds in DiscoveryScanner.
     - _Requirements: 3.6, 3.7, 4.5, 5.5, 6.6, 7.3, 7.6, 8.3, 8.6, 9.2, 9.5_
 
-  - [ ] 5.3 Deliver via branch, PR, and passing workflows
+  - [x] 5.3 Deliver via branch, PR, and passing workflows
     - Start only after 4.8 has merged. Run `git fetch origin`, `git checkout main`, `git pull --ff-only origin main`, then `git checkout -b chore/t5-chart-theming-a11y-cleanup`. Commit the work from 5.1, plus 5.2 if it was done.
     - Push with `git push -u origin <branch>`, open the PR with `gh pr create --base main --head <branch>`, and run `gh pr checks <pr> --watch`.
     - Fix failing checks with new commits and no force push or bypass. Stop and report after 3 consecutive failures of the same check.
@@ -149,11 +149,11 @@ Delivery workflow (Requirement 11, design.md "Delivery Workflow"): every impleme
     - Watch main workflows with `gh run watch <run-id>` until each finishes. Fix failures through a new unit of work.
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10, 11.11, 11.12, 11.13, 11.14_
 
-- [ ] 6. Final checkpoint - Ensure all tests pass
+- [x] 6. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Final delivery verification
-  - [ ] 7.1 Confirm repository state after all deliveries
+- [x] 7. Final delivery verification
+  - [x] 7.1 Confirm repository state after all deliveries
     - Run `git fetch origin` and confirm `git rev-parse main` equals `git rev-parse origin/main`.
     - Run `gh run list --branch main --limit 10` and confirm the latest main workflows passed. Run `gh pr list --state open` and confirm every PR from this plan checks out as green or is merged.
     - Run `git branch -r --no-merged origin/main` and `git branch --no-merged main` and confirm no feature branch holds unmerged work. Report any that do.
