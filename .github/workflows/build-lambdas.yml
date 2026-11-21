@@ -64,36 +64,34 @@ jobs:
         with:
           python-version: "3.12"
 
-      # Build each Lambda in parallel via matrix
+      # Build each zip-packaged Lambda. First argument is the source folder
+      # relative to backend/; the zip lands in that folder (see
+      # build_one_lambda.sh for the path each Terraform stack references).
+      # The researcher Lambda is image-based (4_researcher image_uri), so it
+      # has no zip build here.
       - name: Build planner
-        run: ./scripts/ci/build_one_lambda.sh portfolio_planner planner
+        run: bash .github/scripts/ci/build_one_lambda.sh services/agents/portfolio_planner planner
 
       - name: Build tagger
-        run: ./scripts/ci/build_one_lambda.sh agents/instrument_tagger tagger
+        run: bash .github/scripts/ci/build_one_lambda.sh services/agents/instrument_tagger tagger
 
       - name: Build reporter
-        run: ./scripts/ci/build_one_lambda.sh agents/report_writer reporter
+        run: bash .github/scripts/ci/build_one_lambda.sh services/agents/report_writer reporter
 
       - name: Build charter
-        run: ./scripts/ci/build_one_lambda.sh agents/chart_maker charter
+        run: bash .github/scripts/ci/build_one_lambda.sh services/agents/chart_maker charter
 
       - name: Build retirement
-        run: ./scripts/ci/build_one_lambda.sh agents/retirement_specialist retirement
-
-      - name: Build researcher
-        run: ./scripts/ci/build_one_lambda.sh agents/researcher_agent researcher
+        run: bash .github/scripts/ci/build_one_lambda.sh services/agents/retirement_specialist retirement
 
       - name: Build scheduler
-        run: ./scripts/ci/build_one_lambda.sh scheduler scheduler
+        run: bash .github/scripts/ci/build_one_lambda.sh services/scheduler scheduler
 
       - name: Build ingest
-        run: ./scripts/ci/build_one_lambda.sh knowledge_base/ingest knowledge_base
-
-      - name: Build search
-        run: ./scripts/ci/build_one_lambda.sh knowledge_base/ingest knowledge_base
+        run: bash .github/scripts/ci/build_one_lambda.sh services/knowledge_base/ingestion ingest
 
       - name: Build api
-        run: ./scripts/ci/build_one_lambda.sh api_gateway api
+        run: bash .github/scripts/ci/build_one_lambda.sh api_gateway api
 
       - name: Upload Lambda artifacts
-        run: ./scripts/ci/upload_artifacts.sh "$ARTIFACTS_BUCKET" "${GITHUB_SHA}"
+        run: bash .github/scripts/ci/upload_artifacts.sh "$ARTIFACTS_BUCKET" "${GITHUB_SHA}"

@@ -19,6 +19,10 @@ data "aws_caller_identity" "current" {}
 locals {
   researcher_deployed = var.researcher_image_uri != ""
   scheduler_active    = var.scheduler_enabled && local.researcher_deployed
+
+  # Built by: bash .github/scripts/ci/build_one_lambda.sh services/scheduler scheduler
+  # path.module is infrastructure/terraform/4_researcher, so ../../.. is the repo root.
+  scheduler_zip = "${path.module}/../../../backend/services/scheduler/lambda_function.zip"
 }
 
 # ECR repository for the researcher Docker image
@@ -191,8 +195,8 @@ resource "aws_lambda_function" "scheduler_lambda" {
   count            = local.scheduler_active ? 1 : 0
   function_name    = "alex-researcher-scheduler"
   role             = aws_iam_role.lambda_scheduler_role[0].arn
-  filename         = "${path.module}/../../backend/scheduler/lambda_function.zip"
-  source_code_hash = fileexists("${path.module}/../../backend/scheduler/lambda_function.zip") ? filebase64sha256("${path.module}/../../backend/scheduler/lambda_function.zip") : null
+  filename         = local.scheduler_zip
+  source_code_hash = fileexists(local.scheduler_zip) ? filebase64sha256(local.scheduler_zip) : null
   handler          = "lambda_function.handler"
   runtime          = "python3.12"
   timeout          = 180

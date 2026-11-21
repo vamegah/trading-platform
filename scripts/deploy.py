@@ -84,7 +84,9 @@ def package_lambda():
     """Package the Lambda function using Docker."""
     print("\n📦 Packaging Lambda function...")
 
-    api_dir = Path(__file__).parent.parent / "backend" / "api"
+    # Must match the zip path in infrastructure/terraform/7_frontend (local.api_zip)
+    # and .github/scripts/ci/build_one_lambda.sh.
+    api_dir = Path(__file__).parent.parent / "backend" / "api_gateway"
 
     if not api_dir.exists():
         print(f"  ❌ API directory not found: {api_dir}")
@@ -175,7 +177,7 @@ def deploy_terraform():
     """Deploy infrastructure with Terraform."""
     print("\n🏗️  Deploying infrastructure with Terraform...")
 
-    terraform_dir = Path(__file__).parent.parent / "terraform" / "7_frontend"
+    terraform_dir = Path(__file__).parent.parent / "infrastructure" / "terraform" / "7_frontend"
 
     if not terraform_dir.exists():
         print(f"  ❌ Terraform directory not found: {terraform_dir}")
