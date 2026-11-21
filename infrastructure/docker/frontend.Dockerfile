@@ -11,7 +11,10 @@ RUN npm run build
 
 FROM nginx:1.30-alpine
 
-RUN apk upgrade --no-cache
+# Upgrade OS packages. The explicit libxml2 floor (CVE-2026-86144, fixed in 2.13.9-r3)
+# also changes this layer's text so a stale cached `apk upgrade` layer from the CI
+# GHA build cache is not reused. Fails the build if the fixed version is unavailable.
+RUN apk upgrade --no-cache && apk add --no-cache "libxml2>=2.13.9-r3"
 
 COPY infrastructure/docker/frontend-nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
