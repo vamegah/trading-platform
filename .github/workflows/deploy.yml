@@ -53,7 +53,7 @@ jobs:
       backend-image: ${{ env.BACKEND_IMAGE }}:${{ env.DEPLOY_TAG }}
       frontend-image: ${{ env.FRONTEND_IMAGE }}:${{ env.DEPLOY_TAG }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -135,7 +135,7 @@ jobs:
     needs: release-candidate
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
       - name: Configure AWS credentials
         if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
@@ -175,7 +175,7 @@ jobs:
     if: ${{ inputs.deploy_kubernetes }}
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Configure kubeconfig
         run: |
           mkdir -p "$HOME/.kube"
@@ -195,7 +195,7 @@ jobs:
     if: ${{ always() && vars.SMOKE_TEST_BASE_URL != '' && (needs.deploy-kubernetes.result == 'success' || needs.deploy-kubernetes.result == 'skipped') && needs.infrastructure.result == 'success' }}
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -209,6 +209,6 @@ jobs:
     if: ${{ failure() && inputs.environment == 'production' }}
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Print rollback checklist
         run: python scripts/production_readiness.py --rollback-checklist

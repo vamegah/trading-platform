@@ -49,7 +49,7 @@ jobs:
       cloudfront_distribution_id: ${{ steps.outputs.outputs.cloudfront_distribution_id }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
