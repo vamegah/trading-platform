@@ -3,13 +3,15 @@ from logging.config import fileConfig
 from alembic import context
 
 from backend.shared.config import settings
-from backend.shared.database import Base
+from backend.shared.database import Base, resolve_database_url
 from backend.shared import models  # noqa: F401
 
 config = context.config
 configured_url = config.get_main_option("sqlalchemy.url")
 if not configured_url or configured_url == "driver://user:pass@localhost/dbname":
-    config.set_main_option("sqlalchemy.url", settings.database_url)
+    configured_url = settings.database_url
+# configparser treats "%" as interpolation, so escape it (passwords may be URL-encoded).
+config.set_main_option("sqlalchemy.url", resolve_database_url(configured_url).replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
