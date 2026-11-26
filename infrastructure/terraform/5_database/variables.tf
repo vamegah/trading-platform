@@ -14,3 +14,9 @@ variable "max_capacity" {
   type        = number
   default     = 1
 }
+
+variable "name_prefix" {
+  description = "Prefix for resource names. Use a distinct value per environment when several share one AWS account."
+  type        = string
+  default     = "alex"
+}

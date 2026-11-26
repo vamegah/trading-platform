@@ -14,3 +14,15 @@ variable "index_name" {
   type        = string
   default     = "financial-research"
 }
+
+variable "name_prefix" {
+  description = "Prefix for resource names. Use a distinct value per environment when several share one AWS account."
+  type        = string
+  default     = "alex"
+}
+
+variable "lambda_artifacts_bucket" {
+  description = "S3 bucket holding the built Lambda zips. Leave empty to use the local zip under backend/."
+  type        = string
+  default     = ""
+}

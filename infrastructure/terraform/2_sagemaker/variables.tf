@@ -14,3 +14,9 @@ variable "embedding_model_name" {
   type        = string
   default     = "sentence-transformers/all-MiniLM-L6-v2"
 }
+
+variable "name_prefix" {
+  description = "Prefix for resource names. Use a distinct value per environment when several share one AWS account."
+  type        = string
+  default     = "alex"
+}

@@ -1,0 +1,6 @@
+{
+  "aws_region": "us-east-1",
+  "bedrock_region": "us-west-2",
+  "bedrock_model_id": "REPLACE_WITH_BEDROCK_MODEL_ID",
+  "polygon_api_key": "REPLACE_WITH_POLYGON_API_KEY"
+}

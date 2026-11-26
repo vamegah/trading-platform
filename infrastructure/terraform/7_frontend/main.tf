@@ -5,7 +5,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = ">= 5.0"
     }
   }
 }
@@ -19,16 +19,19 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-# Reference Part 5 Database resources
+# Part 5 Database and Part 6 Agents values. Environment roots pass them in as
+# variables (module outputs). When they are not passed, a standalone run reads
+# them from the local state of the sibling stacks.
 data "terraform_remote_state" "database" {
+  count   = var.aurora_cluster_arn == null || var.aurora_secret_arn == null || var.database_name == null ? 1 : 0
   backend = "local"
   config = {
     path = "../5_database/terraform.tfstate"
   }
 }
 
-# Reference Part 6 Agents resources
 data "terraform_remote_state" "agents" {
+  count   = var.sqs_queue_arn == null || var.sqs_queue_url == null ? 1 : 0
   backend = "local"
   config = {
     path = "../6_agents/terraform.tfstate"
@@ -36,7 +39,19 @@ data "terraform_remote_state" "agents" {
 }
 
 locals {
-  name_prefix = "alex"
+  name_prefix = var.name_prefix
+
+  aurora_cluster_arn = coalesce(var.aurora_cluster_arn, try(data.terraform_remote_state.database[0].outputs.aurora_cluster_arn, null))
+  aurora_secret_arn  = coalesce(var.aurora_secret_arn, try(data.terraform_remote_state.database[0].outputs.aurora_secret_arn, null))
+  database_name      = coalesce(var.database_name, try(data.terraform_remote_state.database[0].outputs.database_name, null))
+  sqs_queue_arn      = coalesce(var.sqs_queue_arn, try(data.terraform_remote_state.agents[0].outputs.sqs_queue_arn, null))
+  sqs_queue_url      = coalesce(var.sqs_queue_url, try(data.terraform_remote_state.agents[0].outputs.sqs_queue_url, null))
+
+  # When var.lambda_artifacts_bucket is set (environment roots), the zip comes
+  # from that bucket, where .github/scripts/ci/upload_artifacts.sh puts it.
+  # Otherwise the local zip below is used.
+  use_s3  = var.lambda_artifacts_bucket != ""
+  api_key = "api/api_lambda.zip"
 
   # Built by scripts/deploy.py or
   # bash .github/scripts/ci/build_one_lambda.sh api_gateway api
@@ -96,6 +111,14 @@ resource "aws_s3_bucket_policy" "frontend" {
   depends_on = [aws_s3_bucket_public_access_block.frontend]
 }
 
+# Reads the uploaded zip so a new upload changes s3_object_version and
+# redeploys the function. version_id is empty on an unversioned bucket.
+data "aws_s3_object" "api" {
+  count  = local.use_s3 ? 1 : 0
+  bucket = var.lambda_artifacts_bucket
+  key    = local.api_key
+}
+
 # IAM role for Lambda API function
 resource "aws_iam_role" "api_lambda_role" {
   name = "${local.name_prefix}-api-lambda-role"
@@ -138,14 +161,14 @@ resource "aws_iam_role_policy" "api_lambda_aurora" {
           "rds-data:CommitTransaction",
           "rds-data:RollbackTransaction"
         ]
-        Resource = data.terraform_remote_state.database.outputs.aurora_cluster_arn
+        Resource = local.aurora_cluster_arn
       },
       {
         Effect = "Allow"
         Action = [
           "secretsmanager:GetSecretValue"
         ]
-        Resource = data.terraform_remote_state.database.outputs.aurora_secret_arn
+        Resource = local.aurora_secret_arn
       }
     ]
   })
@@ -165,7 +188,7 @@ resource "aws_iam_role_policy" "api_lambda_sqs" {
           "sqs:SendMessage",
           "sqs:GetQueueAttributes"
         ]
-        Resource = data.terraform_remote_state.agents.outputs.sqs_queue_arn
+        Resource = local.sqs_queue_arn
       }
     ]
   })
@@ -183,11 +206,11 @@ resource "aws_iam_role_policy" "api_lambda_invoke" {
         Effect = "Allow"
         Action = "lambda:InvokeFunction"
         Resource = [
-          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:alex-planner",
-          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:alex-tagger",
-          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:alex-reporter",
-          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:alex-charter",
-          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:alex-retirement"
+          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-planner",
+          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-tagger",
+          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-reporter",
+          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-charter",
+          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-retirement"
         ]
       }
     ]
@@ -196,27 +219,31 @@ resource "aws_iam_role_policy" "api_lambda_invoke" {
 
 # Lambda function for API
 resource "aws_lambda_function" "api" {
-  filename         = local.api_zip
+  filename         = local.use_s3 ? null : local.api_zip
   function_name    = "${local.name_prefix}-api"
   role             = aws_iam_role.api_lambda_role.arn
   handler          = "lambda_handler.handler"
-  source_code_hash = fileexists(local.api_zip) ? filebase64sha256(local.api_zip) : null
-  runtime          = "python3.12"
-  architectures    = ["x86_64"]
-  timeout          = 30
-  memory_size      = 512
-  tags             = local.common_tags
+  source_code_hash = !local.use_s3 && fileexists(local.api_zip) ? filebase64sha256(local.api_zip) : null
+
+  s3_bucket         = local.use_s3 ? var.lambda_artifacts_bucket : null
+  s3_key            = local.use_s3 ? local.api_key : null
+  s3_object_version = local.use_s3 ? try(coalesce(data.aws_s3_object.api[0].version_id), null) : null
+  runtime           = "python3.12"
+  architectures     = ["x86_64"]
+  timeout           = 30
+  memory_size       = 512
+  tags              = local.common_tags
 
   environment {
     variables = {
       # Database configuration from Part 5
-      AURORA_CLUSTER_ARN = data.terraform_remote_state.database.outputs.aurora_cluster_arn
-      AURORA_SECRET_ARN  = data.terraform_remote_state.database.outputs.aurora_secret_arn
-      AURORA_DATABASE    = data.terraform_remote_state.database.outputs.database_name
+      AURORA_CLUSTER_ARN = local.aurora_cluster_arn
+      AURORA_SECRET_ARN  = local.aurora_secret_arn
+      AURORA_DATABASE    = local.database_name
       DEFAULT_AWS_REGION = var.aws_region
 
       # SQS configuration from Part 6
-      SQS_QUEUE_URL = data.terraform_remote_state.agents.outputs.sqs_queue_url
+      SQS_QUEUE_URL = local.sqs_queue_url
 
       # Clerk configuration for JWT validation
       CLERK_JWKS_URL = var.clerk_jwks_url

@@ -43,3 +43,8 @@ Thumbs.db
 # .github/scripts/ci/build_one_lambda.sh and the per-service packagers)
 backend/**/*_lambda.zip
 backend/**/lambda_function.zip
+
+# Terraform environment roots: the real tfvars hold secrets and are written only by CI
+infrastructure/terraform/envs/*/terraform.auto.tfvars.json
+infrastructure/terraform/envs/*/.terraform/
+infrastructure/terraform/envs/*/plan.tfplan

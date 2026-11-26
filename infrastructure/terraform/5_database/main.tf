@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = ">= 5.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -36,7 +36,7 @@ resource "random_password" "db_password" {
 
 # Secrets Manager secret for database credentials
 resource "aws_secretsmanager_secret" "db_credentials" {
-  name                    = "alex-aurora-credentials-${random_id.suffix.hex}"
+  name                    = "${var.name_prefix}-aurora-credentials-${random_id.suffix.hex}"
   recovery_window_in_days = 0 # For development - immediate deletion
 
   tags = {
@@ -70,7 +70,7 @@ data "aws_subnets" "default" {
 }
 
 resource "aws_db_subnet_group" "aurora" {
-  name       = "alex-aurora-subnet-group"
+  name       = "${var.name_prefix}-aurora-subnet-group"
   subnet_ids = data.aws_subnets.default.ids
 
   tags = {
@@ -81,7 +81,7 @@ resource "aws_db_subnet_group" "aurora" {
 
 # Security group for Aurora
 resource "aws_security_group" "aurora" {
-  name        = "alex-aurora-sg"
+  name        = "${var.name_prefix}-aurora-sg"
   description = "Security group for Alex Aurora cluster"
   vpc_id      = data.aws_vpc.default.id
 
@@ -108,7 +108,7 @@ resource "aws_security_group" "aurora" {
 
 # Aurora Serverless v2 Cluster
 resource "aws_rds_cluster" "aurora" {
-  cluster_identifier = "alex-aurora-cluster"
+  cluster_identifier = "${var.name_prefix}-aurora-cluster"
   engine             = "aurora-postgresql"
   engine_mode        = "provisioned"
   engine_version     = "15.12"
@@ -146,7 +146,7 @@ resource "aws_rds_cluster" "aurora" {
 
 # Aurora Serverless v2 Instance
 resource "aws_rds_cluster_instance" "aurora" {
-  identifier         = "alex-aurora-instance-1"
+  identifier         = "${var.name_prefix}-aurora-instance-1"
   cluster_identifier = aws_rds_cluster.aurora.id
   instance_class     = "db.serverless"
   engine             = aws_rds_cluster.aurora.engine
@@ -162,7 +162,7 @@ resource "aws_rds_cluster_instance" "aurora" {
 
 # IAM role for Lambda to access Aurora Data API
 resource "aws_iam_role" "lambda_aurora_role" {
-  name = "alex-lambda-aurora-role"
+  name = "${var.name_prefix}-lambda-aurora-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -185,7 +185,7 @@ resource "aws_iam_role" "lambda_aurora_role" {
 
 # IAM policy for Data API access
 resource "aws_iam_role_policy" "lambda_aurora_policy" {
-  name = "alex-lambda-aurora-policy"
+  name = "${var.name_prefix}-lambda-aurora-policy"
   role = aws_iam_role.lambda_aurora_role.id
 
   policy = jsonencode({

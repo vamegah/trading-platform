@@ -23,11 +23,25 @@ locals {
   # Built by: bash .github/scripts/ci/build_one_lambda.sh services/scheduler scheduler
   # path.module is infrastructure/terraform/4_researcher, so ../../.. is the repo root.
   scheduler_zip = "${path.module}/../../../backend/services/scheduler/lambda_function.zip"
+
+  # When var.lambda_artifacts_bucket is set (environment roots), the zip comes
+  # from that bucket, where .github/scripts/ci/upload_artifacts.sh puts it.
+  # Otherwise the local zip above is used.
+  use_s3        = var.lambda_artifacts_bucket != ""
+  scheduler_key = "scheduler/lambda_function.zip"
+}
+
+# Reads the uploaded zip so a new upload changes s3_object_version and
+# redeploys the function. version_id is empty on an unversioned bucket.
+data "aws_s3_object" "scheduler" {
+  count  = local.scheduler_active && local.use_s3 ? 1 : 0
+  bucket = var.lambda_artifacts_bucket
+  key    = local.scheduler_key
 }
 
 # ECR repository for the researcher Docker image
 resource "aws_ecr_repository" "researcher" {
-  name                 = "alex-researcher"
+  name                 = "${var.name_prefix}-researcher"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -70,7 +84,7 @@ resource "aws_ecr_repository_policy" "researcher_lambda_access" {
 
 # IAM role for researcher Lambda
 resource "aws_iam_role" "researcher_lambda_role" {
-  name = "alex-researcher-lambda-role"
+  name = "${var.name_prefix}-researcher-lambda-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -99,7 +113,7 @@ resource "aws_iam_role_policy_attachment" "researcher_lambda_basic" {
 
 # Policy for researcher Lambda to access Bedrock
 resource "aws_iam_role_policy" "researcher_lambda_bedrock_access" {
-  name = "alex-researcher-lambda-bedrock-policy"
+  name = "${var.name_prefix}-researcher-lambda-bedrock-policy"
   role = aws_iam_role.researcher_lambda_role.id
 
   policy = jsonencode({
@@ -121,7 +135,7 @@ resource "aws_iam_role_policy" "researcher_lambda_bedrock_access" {
 # Researcher Lambda function
 resource "aws_lambda_function" "researcher" {
   count         = local.researcher_deployed ? 1 : 0
-  function_name = "alex-researcher"
+  function_name = "${var.name_prefix}-researcher"
   package_type  = "Image"
   image_uri     = var.researcher_image_uri
   role          = aws_iam_role.researcher_lambda_role.arn
@@ -169,7 +183,7 @@ resource "aws_lambda_permission" "allow_public_function_url_invoke" {
 # IAM role for EventBridge
 resource "aws_iam_role" "eventbridge_role" {
   count = local.scheduler_active ? 1 : 0
-  name  = "alex-eventbridge-scheduler-role"
+  name  = "${var.name_prefix}-eventbridge-scheduler-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -193,14 +207,18 @@ resource "aws_iam_role" "eventbridge_role" {
 # Lambda function for invoking researcher
 resource "aws_lambda_function" "scheduler_lambda" {
   count            = local.scheduler_active ? 1 : 0
-  function_name    = "alex-researcher-scheduler"
+  function_name    = "${var.name_prefix}-researcher-scheduler"
   role             = aws_iam_role.lambda_scheduler_role[0].arn
-  filename         = local.scheduler_zip
-  source_code_hash = fileexists(local.scheduler_zip) ? filebase64sha256(local.scheduler_zip) : null
+  filename         = local.use_s3 ? null : local.scheduler_zip
+  source_code_hash = !local.use_s3 && fileexists(local.scheduler_zip) ? filebase64sha256(local.scheduler_zip) : null
   handler          = "lambda_function.handler"
   runtime          = "python3.12"
   timeout          = 180
   memory_size      = 256
+
+  s3_bucket         = local.use_s3 ? var.lambda_artifacts_bucket : null
+  s3_key            = local.use_s3 ? local.scheduler_key : null
+  s3_object_version = local.use_s3 ? try(coalesce(data.aws_s3_object.scheduler[0].version_id), null) : null
 
   environment {
     variables = {
@@ -223,7 +241,7 @@ resource "aws_lambda_function" "scheduler_lambda" {
 # IAM role for scheduler Lambda
 resource "aws_iam_role" "lambda_scheduler_role" {
   count = local.scheduler_active ? 1 : 0
-  name  = "alex-scheduler-lambda-role"
+  name  = "${var.name_prefix}-scheduler-lambda-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -254,7 +272,7 @@ resource "aws_iam_role_policy_attachment" "lambda_scheduler_basic" {
 # EventBridge schedule
 resource "aws_scheduler_schedule" "research_schedule" {
   count = local.scheduler_active ? 1 : 0
-  name  = "alex-research-schedule"
+  name  = "${var.name_prefix}-research-schedule"
 
   flexible_time_window {
     mode = "OFF"

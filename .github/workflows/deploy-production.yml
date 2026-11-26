@@ -74,7 +74,7 @@ jobs:
     with:
       environment: prod
       aws_region: us-east-1
-      frontend_bucket: trading-prod-frontend
+      frontend_bucket: ${{ needs.terraform.outputs.frontend_bucket }}
       cloudfront_distribution_id: ${{ needs.terraform.outputs.cloudfront_distribution_id }}
       clerk_key_secret: CLERK_PUBLISHABLE_KEY_PROD
       api_url: ${{ needs.terraform.outputs.api_endpoint }}

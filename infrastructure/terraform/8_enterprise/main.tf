@@ -5,7 +5,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = ">= 5.0"
     }
   }
 }
@@ -19,13 +19,16 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  name_prefix = "alex"
+  name_prefix = var.name_prefix
 
   common_tags = {
     Project   = "alex"
     Part      = "8_enterprise"
     ManagedBy = "terraform"
   }
+
+  ai_model_usage_dashboard    = "${local.name_prefix}-ai-model-usage"
+  agent_performance_dashboard = "${local.name_prefix}-agent-performance"
 }
 
 # ========================================
@@ -33,7 +36,8 @@ locals {
 # ========================================
 
 resource "aws_cloudwatch_dashboard" "ai_model_usage" {
-  dashboard_name = "${local.name_prefix}-ai-model-usage"
+  count          = var.enabled ? 1 : 0
+  dashboard_name = local.ai_model_usage_dashboard
 
   dashboard_body = jsonencode({
     widgets = [
@@ -117,9 +121,9 @@ resource "aws_cloudwatch_dashboard" "ai_model_usage" {
         height = 6
         properties = {
           metrics = [
-            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"Invocations\" EndpointName=\"alex-embedding-endpoint\" ', 'Sum')", id = "s1", label = "Invocations", color = "#1f77b4" }],
-            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"Invocation4XXErrors\" EndpointName=\"alex-embedding-endpoint\" ', 'Sum')", id = "s2", label = "4XX Errors", color = "#ff7f0e" }],
-            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"Invocation5XXErrors\" EndpointName=\"alex-embedding-endpoint\" ', 'Sum')", id = "s3", label = "5XX Errors", color = "#d62728" }]
+            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"Invocations\" EndpointName=\"${var.sagemaker_endpoint_name}\" ', 'Sum')", id = "s1", label = "Invocations", color = "#1f77b4" }],
+            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"Invocation4XXErrors\" EndpointName=\"${var.sagemaker_endpoint_name}\" ', 'Sum')", id = "s2", label = "4XX Errors", color = "#ff7f0e" }],
+            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"Invocation5XXErrors\" EndpointName=\"${var.sagemaker_endpoint_name}\" ', 'Sum')", id = "s3", label = "5XX Errors", color = "#d62728" }]
           ]
           view    = "timeSeries"
           stacked = false
@@ -141,9 +145,9 @@ resource "aws_cloudwatch_dashboard" "ai_model_usage" {
         height = 6
         properties = {
           metrics = [
-            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"ModelLatency\" EndpointName=\"alex-embedding-endpoint\" ', 'Average')", id = "ml1", label = "Average Latency", color = "#2ca02c" }],
-            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"ModelLatency\" EndpointName=\"alex-embedding-endpoint\" ', 'Maximum')", id = "ml2", label = "Max Latency", color = "#d62728" }],
-            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"ModelLatency\" EndpointName=\"alex-embedding-endpoint\" ', 'Minimum')", id = "ml3", label = "Min Latency", color = "#1f77b4" }]
+            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"ModelLatency\" EndpointName=\"${var.sagemaker_endpoint_name}\" ', 'Average')", id = "ml1", label = "Average Latency", color = "#2ca02c" }],
+            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"ModelLatency\" EndpointName=\"${var.sagemaker_endpoint_name}\" ', 'Maximum')", id = "ml2", label = "Max Latency", color = "#d62728" }],
+            [{ expression = "SEARCH(' {AWS/SageMaker,EndpointName,VariantName} MetricName=\"ModelLatency\" EndpointName=\"${var.sagemaker_endpoint_name}\" ', 'Minimum')", id = "ml3", label = "Min Latency", color = "#1f77b4" }]
           ]
           view    = "timeSeries"
           stacked = false
@@ -168,7 +172,8 @@ resource "aws_cloudwatch_dashboard" "ai_model_usage" {
 # ========================================
 
 resource "aws_cloudwatch_dashboard" "agent_performance" {
-  dashboard_name = "${local.name_prefix}-agent-performance"
+  count          = var.enabled ? 1 : 0
+  dashboard_name = local.agent_performance_dashboard
 
   dashboard_body = jsonencode({
     widgets = [
@@ -179,11 +184,11 @@ resource "aws_cloudwatch_dashboard" "agent_performance" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/Lambda", "Duration", "FunctionName", "alex-planner", { stat = "Average", label = "Planner", id = "m1", color = "#1f77b4" }],
-            [".", ".", ".", "alex-reporter", { stat = "Average", label = "Reporter", id = "m2", color = "#2ca02c" }],
-            [".", ".", ".", "alex-charter", { stat = "Average", label = "Charter", id = "m3", color = "#ff7f0e" }],
-            [".", ".", ".", "alex-retirement", { stat = "Average", label = "Retirement", id = "m4", color = "#d62728" }],
-            [".", ".", ".", "alex-tagger", { stat = "Average", label = "Tagger", id = "m5", color = "#9467bd" }]
+            ["AWS/Lambda", "Duration", "FunctionName", "${local.name_prefix}-planner", { stat = "Average", label = "Planner", id = "m1", color = "#1f77b4" }],
+            [".", ".", ".", "${local.name_prefix}-reporter", { stat = "Average", label = "Reporter", id = "m2", color = "#2ca02c" }],
+            [".", ".", ".", "${local.name_prefix}-charter", { stat = "Average", label = "Charter", id = "m3", color = "#ff7f0e" }],
+            [".", ".", ".", "${local.name_prefix}-retirement", { stat = "Average", label = "Retirement", id = "m4", color = "#d62728" }],
+            [".", ".", ".", "${local.name_prefix}-tagger", { stat = "Average", label = "Tagger", id = "m5", color = "#9467bd" }]
           ]
           view    = "timeSeries"
           stacked = false
@@ -206,11 +211,11 @@ resource "aws_cloudwatch_dashboard" "agent_performance" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/Lambda", "Errors", "FunctionName", "alex-planner", { stat = "Sum", label = "Planner Errors", id = "e1", color = "#1f77b4" }],
-            [".", ".", ".", "alex-reporter", { stat = "Sum", label = "Reporter Errors", id = "e2", color = "#2ca02c" }],
-            [".", ".", ".", "alex-charter", { stat = "Sum", label = "Charter Errors", id = "e3", color = "#ff7f0e" }],
-            [".", ".", ".", "alex-retirement", { stat = "Sum", label = "Retirement Errors", id = "e4", color = "#d62728" }],
-            [".", ".", ".", "alex-tagger", { stat = "Sum", label = "Tagger Errors", id = "e5", color = "#9467bd" }]
+            ["AWS/Lambda", "Errors", "FunctionName", "${local.name_prefix}-planner", { stat = "Sum", label = "Planner Errors", id = "e1", color = "#1f77b4" }],
+            [".", ".", ".", "${local.name_prefix}-reporter", { stat = "Sum", label = "Reporter Errors", id = "e2", color = "#2ca02c" }],
+            [".", ".", ".", "${local.name_prefix}-charter", { stat = "Sum", label = "Charter Errors", id = "e3", color = "#ff7f0e" }],
+            [".", ".", ".", "${local.name_prefix}-retirement", { stat = "Sum", label = "Retirement Errors", id = "e4", color = "#d62728" }],
+            [".", ".", ".", "${local.name_prefix}-tagger", { stat = "Sum", label = "Tagger Errors", id = "e5", color = "#9467bd" }]
           ]
           view    = "timeSeries"
           stacked = false
@@ -233,11 +238,11 @@ resource "aws_cloudwatch_dashboard" "agent_performance" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/Lambda", "Invocations", "FunctionName", "alex-planner", { stat = "Sum", label = "Planner", id = "i1", color = "#1f77b4" }],
-            [".", ".", ".", "alex-reporter", { stat = "Sum", label = "Reporter", id = "i2", color = "#2ca02c" }],
-            [".", ".", ".", "alex-charter", { stat = "Sum", label = "Charter", id = "i3", color = "#ff7f0e" }],
-            [".", ".", ".", "alex-retirement", { stat = "Sum", label = "Retirement", id = "i4", color = "#d62728" }],
-            [".", ".", ".", "alex-tagger", { stat = "Sum", label = "Tagger", id = "i5", color = "#9467bd" }]
+            ["AWS/Lambda", "Invocations", "FunctionName", "${local.name_prefix}-planner", { stat = "Sum", label = "Planner", id = "i1", color = "#1f77b4" }],
+            [".", ".", ".", "${local.name_prefix}-reporter", { stat = "Sum", label = "Reporter", id = "i2", color = "#2ca02c" }],
+            [".", ".", ".", "${local.name_prefix}-charter", { stat = "Sum", label = "Charter", id = "i3", color = "#ff7f0e" }],
+            [".", ".", ".", "${local.name_prefix}-retirement", { stat = "Sum", label = "Retirement", id = "i4", color = "#d62728" }],
+            [".", ".", ".", "${local.name_prefix}-tagger", { stat = "Sum", label = "Tagger", id = "i5", color = "#9467bd" }]
           ]
           view    = "timeSeries"
           stacked = false
@@ -260,11 +265,11 @@ resource "aws_cloudwatch_dashboard" "agent_performance" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/Lambda", "ConcurrentExecutions", "FunctionName", "alex-planner", { stat = "Maximum", label = "Planner", id = "c1", color = "#1f77b4" }],
-            [".", ".", ".", "alex-reporter", { stat = "Maximum", label = "Reporter", id = "c2", color = "#2ca02c" }],
-            [".", ".", ".", "alex-charter", { stat = "Maximum", label = "Charter", id = "c3", color = "#ff7f0e" }],
-            [".", ".", ".", "alex-retirement", { stat = "Maximum", label = "Retirement", id = "c4", color = "#d62728" }],
-            [".", ".", ".", "alex-tagger", { stat = "Maximum", label = "Tagger", id = "c5", color = "#9467bd" }]
+            ["AWS/Lambda", "ConcurrentExecutions", "FunctionName", "${local.name_prefix}-planner", { stat = "Maximum", label = "Planner", id = "c1", color = "#1f77b4" }],
+            [".", ".", ".", "${local.name_prefix}-reporter", { stat = "Maximum", label = "Reporter", id = "c2", color = "#2ca02c" }],
+            [".", ".", ".", "${local.name_prefix}-charter", { stat = "Maximum", label = "Charter", id = "c3", color = "#ff7f0e" }],
+            [".", ".", ".", "${local.name_prefix}-retirement", { stat = "Maximum", label = "Retirement", id = "c4", color = "#d62728" }],
+            [".", ".", ".", "${local.name_prefix}-tagger", { stat = "Maximum", label = "Tagger", id = "c5", color = "#9467bd" }]
           ]
           view    = "timeSeries"
           stacked = false
@@ -287,11 +292,11 @@ resource "aws_cloudwatch_dashboard" "agent_performance" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/Lambda", "Throttles", "FunctionName", "alex-planner", { stat = "Sum", label = "Planner Throttles", id = "t1", color = "#1f77b4" }],
-            [".", ".", ".", "alex-reporter", { stat = "Sum", label = "Reporter Throttles", id = "t2", color = "#2ca02c" }],
-            [".", ".", ".", "alex-charter", { stat = "Sum", label = "Charter Throttles", id = "t3", color = "#ff7f0e" }],
-            [".", ".", ".", "alex-retirement", { stat = "Sum", label = "Retirement Throttles", id = "t4", color = "#d62728" }],
-            [".", ".", ".", "alex-tagger", { stat = "Sum", label = "Tagger Throttles", id = "t5", color = "#9467bd" }]
+            ["AWS/Lambda", "Throttles", "FunctionName", "${local.name_prefix}-planner", { stat = "Sum", label = "Planner Throttles", id = "t1", color = "#1f77b4" }],
+            [".", ".", ".", "${local.name_prefix}-reporter", { stat = "Sum", label = "Reporter Throttles", id = "t2", color = "#2ca02c" }],
+            [".", ".", ".", "${local.name_prefix}-charter", { stat = "Sum", label = "Charter Throttles", id = "t3", color = "#ff7f0e" }],
+            [".", ".", ".", "${local.name_prefix}-retirement", { stat = "Sum", label = "Retirement Throttles", id = "t4", color = "#d62728" }],
+            [".", ".", ".", "${local.name_prefix}-tagger", { stat = "Sum", label = "Tagger Throttles", id = "t5", color = "#9467bd" }]
           ]
           view    = "timeSeries"
           stacked = false
@@ -310,4 +315,15 @@ resource "aws_cloudwatch_dashboard" "agent_performance" {
     ]
   })
 
+}
+
+# State written before the dashboards became optional used the unindexed addresses.
+moved {
+  from = aws_cloudwatch_dashboard.ai_model_usage
+  to   = aws_cloudwatch_dashboard.ai_model_usage[0]
+}
+
+moved {
+  from = aws_cloudwatch_dashboard.agent_performance
+  to   = aws_cloudwatch_dashboard.agent_performance[0]
 }
