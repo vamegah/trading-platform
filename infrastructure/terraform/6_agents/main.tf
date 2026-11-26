@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = ">= 5.0"
     }
   }
 
@@ -24,7 +24,7 @@ data "aws_caller_identity" "current" {}
 # ========================================
 
 resource "aws_sqs_queue" "analysis_jobs" {
-  name                       = "alex-analysis-jobs"
+  name                       = "${var.name_prefix}-analysis-jobs"
   delay_seconds              = 0
   max_message_size           = 262144
   message_retention_seconds  = 86400 # 1 day
@@ -43,7 +43,7 @@ resource "aws_sqs_queue" "analysis_jobs" {
 }
 
 resource "aws_sqs_queue" "analysis_jobs_dlq" {
-  name = "alex-analysis-jobs-dlq"
+  name = "${var.name_prefix}-analysis-jobs-dlq"
 
   tags = {
     Project = "alex"
@@ -56,7 +56,7 @@ resource "aws_sqs_queue" "analysis_jobs_dlq" {
 # ========================================
 
 resource "aws_iam_role" "lambda_agents_role" {
-  name = "alex-lambda-agents-role"
+  name = "${var.name_prefix}-lambda-agents-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -79,7 +79,7 @@ resource "aws_iam_role" "lambda_agents_role" {
 
 # IAM policy for Lambda agents
 resource "aws_iam_role_policy" "lambda_agents_policy" {
-  name = "alex-lambda-agents-policy"
+  name = "${var.name_prefix}-lambda-agents-policy"
   role = aws_iam_role.lambda_agents_role.id
 
   policy = jsonencode({
@@ -111,7 +111,7 @@ resource "aws_iam_role_policy" "lambda_agents_policy" {
         Action = [
           "lambda:InvokeFunction"
         ]
-        Resource = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:alex-*"
+        Resource = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.name_prefix}-*"
       },
       # Aurora Data API access
       {
@@ -191,7 +191,10 @@ resource "aws_iam_role_policy_attachment" "lambda_agents_basic" {
 
 # S3 bucket for Lambda packages (packages > 50MB must use S3)
 resource "aws_s3_bucket" "lambda_packages" {
-  bucket = "alex-lambda-packages-${data.aws_caller_identity.current.account_id}"
+  # Not needed when the zips already live in var.lambda_artifacts_bucket.
+  count = local.use_s3 ? 0 : 1
+
+  bucket = "${var.name_prefix}-lambda-packages-${data.aws_caller_identity.current.account_id}"
 
   tags = {
     Project = "alex"
@@ -210,14 +213,31 @@ locals {
     charter    = "${path.module}/../../../backend/services/agents/chart_maker/charter_lambda.zip"
     retirement = "${path.module}/../../../backend/services/agents/retirement_specialist/retirement_lambda.zip"
   }
+
+  # When var.lambda_artifacts_bucket is set (environment roots), the zips come
+  # from that bucket, where .github/scripts/ci/upload_artifacts.sh puts them
+  # under the same keys used here. Otherwise this stack uploads the local zips
+  # to its own bucket.
+  use_s3         = var.lambda_artifacts_bucket != ""
+  package_bucket = coalesce(var.lambda_artifacts_bucket, one(aws_s3_bucket.lambda_packages[*].id))
+  package_keys   = { for name in keys(local.agent_zips) : name => "${name}/${name}_lambda.zip" }
+}
+
+# Reads each uploaded zip so a new upload changes s3_object_version and
+# redeploys the function. version_id is empty on an unversioned bucket.
+data "aws_s3_object" "agent_package" {
+  for_each = local.use_s3 ? local.agent_zips : {}
+
+  bucket = var.lambda_artifacts_bucket
+  key    = local.package_keys[each.key]
 }
 
 # Upload Lambda packages to S3
 resource "aws_s3_object" "lambda_packages" {
-  for_each = local.agent_zips
+  for_each = local.use_s3 ? {} : local.agent_zips
 
-  bucket = aws_s3_bucket.lambda_packages.id
-  key    = "${each.key}/${each.key}_lambda.zip"
+  bucket = aws_s3_bucket.lambda_packages[0].id
+  key    = local.package_keys[each.key]
   source = each.value
   etag   = fileexists(each.value) ? filemd5(each.value) : null
 
@@ -234,13 +254,14 @@ resource "aws_s3_object" "lambda_packages" {
 
 # Planner (Orchestrator) Lambda
 resource "aws_lambda_function" "planner" {
-  function_name = "alex-planner"
+  function_name = "${var.name_prefix}-planner"
   role          = aws_iam_role.lambda_agents_role.arn
 
   # Using S3 for deployment package (>50MB)
-  s3_bucket        = aws_s3_bucket.lambda_packages.id
-  s3_key           = aws_s3_object.lambda_packages["planner"].key
-  source_code_hash = fileexists(local.agent_zips["planner"]) ? filebase64sha256(local.agent_zips["planner"]) : null
+  s3_bucket         = local.package_bucket
+  s3_key            = local.package_keys["planner"]
+  s3_object_version = local.use_s3 ? try(coalesce(data.aws_s3_object.agent_package["planner"].version_id), null) : null
+  source_code_hash  = !local.use_s3 && fileexists(local.agent_zips["planner"]) ? filebase64sha256(local.agent_zips["planner"]) : null
 
   handler     = "lambda_handler.lambda_handler"
   runtime     = "python3.12"
@@ -273,7 +294,7 @@ resource "aws_lambda_function" "planner" {
     Agent   = "orchestrator"
   }
 
-  depends_on = [aws_s3_object.lambda_packages["planner"]]
+  depends_on = [aws_s3_object.lambda_packages]
 }
 
 # SQS trigger for Planner
@@ -285,13 +306,14 @@ resource "aws_lambda_event_source_mapping" "planner_sqs" {
 
 # Tagger Lambda
 resource "aws_lambda_function" "tagger" {
-  function_name = "alex-tagger"
+  function_name = "${var.name_prefix}-tagger"
   role          = aws_iam_role.lambda_agents_role.arn
 
   # Using S3 for deployment package (>50MB)
-  s3_bucket        = aws_s3_bucket.lambda_packages.id
-  s3_key           = aws_s3_object.lambda_packages["tagger"].key
-  source_code_hash = fileexists(local.agent_zips["tagger"]) ? filebase64sha256(local.agent_zips["tagger"]) : null
+  s3_bucket         = local.package_bucket
+  s3_key            = local.package_keys["tagger"]
+  s3_object_version = local.use_s3 ? try(coalesce(data.aws_s3_object.agent_package["tagger"].version_id), null) : null
+  source_code_hash  = !local.use_s3 && fileexists(local.agent_zips["tagger"]) ? filebase64sha256(local.agent_zips["tagger"]) : null
 
   handler     = "lambda_handler.lambda_handler"
   runtime     = "python3.12"
@@ -320,18 +342,19 @@ resource "aws_lambda_function" "tagger" {
     Agent   = "tagger"
   }
 
-  depends_on = [aws_s3_object.lambda_packages["tagger"]]
+  depends_on = [aws_s3_object.lambda_packages]
 }
 
 # Reporter Lambda
 resource "aws_lambda_function" "reporter" {
-  function_name = "alex-reporter"
+  function_name = "${var.name_prefix}-reporter"
   role          = aws_iam_role.lambda_agents_role.arn
 
   # Using S3 for deployment package (>50MB)
-  s3_bucket        = aws_s3_bucket.lambda_packages.id
-  s3_key           = aws_s3_object.lambda_packages["reporter"].key
-  source_code_hash = fileexists(local.agent_zips["reporter"]) ? filebase64sha256(local.agent_zips["reporter"]) : null
+  s3_bucket         = local.package_bucket
+  s3_key            = local.package_keys["reporter"]
+  s3_object_version = local.use_s3 ? try(coalesce(data.aws_s3_object.agent_package["reporter"].version_id), null) : null
+  source_code_hash  = !local.use_s3 && fileexists(local.agent_zips["reporter"]) ? filebase64sha256(local.agent_zips["reporter"]) : null
 
   handler     = "lambda_handler.lambda_handler"
   runtime     = "python3.12"
@@ -361,18 +384,19 @@ resource "aws_lambda_function" "reporter" {
     Agent   = "reporter"
   }
 
-  depends_on = [aws_s3_object.lambda_packages["reporter"]]
+  depends_on = [aws_s3_object.lambda_packages]
 }
 
 # Charter Lambda
 resource "aws_lambda_function" "charter" {
-  function_name = "alex-charter"
+  function_name = "${var.name_prefix}-charter"
   role          = aws_iam_role.lambda_agents_role.arn
 
   # Using S3 for deployment package (>50MB)
-  s3_bucket        = aws_s3_bucket.lambda_packages.id
-  s3_key           = aws_s3_object.lambda_packages["charter"].key
-  source_code_hash = fileexists(local.agent_zips["charter"]) ? filebase64sha256(local.agent_zips["charter"]) : null
+  s3_bucket         = local.package_bucket
+  s3_key            = local.package_keys["charter"]
+  s3_object_version = local.use_s3 ? try(coalesce(data.aws_s3_object.agent_package["charter"].version_id), null) : null
+  source_code_hash  = !local.use_s3 && fileexists(local.agent_zips["charter"]) ? filebase64sha256(local.agent_zips["charter"]) : null
 
   handler     = "lambda_handler.lambda_handler"
   runtime     = "python3.12"
@@ -401,18 +425,19 @@ resource "aws_lambda_function" "charter" {
     Agent   = "charter"
   }
 
-  depends_on = [aws_s3_object.lambda_packages["charter"]]
+  depends_on = [aws_s3_object.lambda_packages]
 }
 
 # Retirement Lambda
 resource "aws_lambda_function" "retirement" {
-  function_name = "alex-retirement"
+  function_name = "${var.name_prefix}-retirement"
   role          = aws_iam_role.lambda_agents_role.arn
 
   # Using S3 for deployment package (>50MB)
-  s3_bucket        = aws_s3_bucket.lambda_packages.id
-  s3_key           = aws_s3_object.lambda_packages["retirement"].key
-  source_code_hash = fileexists(local.agent_zips["retirement"]) ? filebase64sha256(local.agent_zips["retirement"]) : null
+  s3_bucket         = local.package_bucket
+  s3_key            = local.package_keys["retirement"]
+  s3_object_version = local.use_s3 ? try(coalesce(data.aws_s3_object.agent_package["retirement"].version_id), null) : null
+  source_code_hash  = !local.use_s3 && fileexists(local.agent_zips["retirement"]) ? filebase64sha256(local.agent_zips["retirement"]) : null
 
   handler     = "lambda_handler.lambda_handler"
   runtime     = "python3.12"
@@ -441,14 +466,14 @@ resource "aws_lambda_function" "retirement" {
     Agent   = "retirement"
   }
 
-  depends_on = [aws_s3_object.lambda_packages["retirement"]]
+  depends_on = [aws_s3_object.lambda_packages]
 }
 
 # CloudWatch Log Groups
 resource "aws_cloudwatch_log_group" "agent_logs" {
   for_each = toset(["planner", "tagger", "reporter", "charter", "retirement"])
 
-  name              = "/aws/lambda/alex-${each.key}"
+  name              = "/aws/lambda/${var.name_prefix}-${each.key}"
   retention_in_days = 7
 
   tags = {
@@ -456,4 +481,9 @@ resource "aws_cloudwatch_log_group" "agent_logs" {
     Part    = "6"
     Agent   = each.key
   }
+}
+# State written before the bucket became optional used the unindexed address.
+moved {
+  from = aws_s3_bucket.lambda_packages
+  to   = aws_s3_bucket.lambda_packages[0]
 }

@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = ">= 5.0"
     }
   }
 
@@ -24,7 +24,7 @@ data "aws_caller_identity" "current" {}
 # ========================================
 
 resource "aws_s3_bucket" "vectors" {
-  bucket = "alex-vectors-${data.aws_caller_identity.current.account_id}"
+  bucket = "${var.name_prefix}-vectors-${data.aws_caller_identity.current.account_id}"
 
   tags = {
     Project = "alex"
@@ -65,7 +65,7 @@ resource "aws_s3_bucket_public_access_block" "vectors" {
 
 # IAM role for Lambda
 resource "aws_iam_role" "lambda_role" {
-  name = "alex-ingest-lambda-role"
+  name = "${var.name_prefix}-ingest-lambda-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -88,7 +88,7 @@ resource "aws_iam_role" "lambda_role" {
 
 # Lambda policy for S3 Vectors and SageMaker
 resource "aws_iam_role_policy" "lambda_policy" {
-  name = "alex-ingest-lambda-policy"
+  name = "${var.name_prefix}-ingest-lambda-policy"
   role = aws_iam_role.lambda_role.id
 
   policy = jsonencode({
@@ -154,14 +154,32 @@ resource "aws_iam_role_policy" "lambda_policy" {
 locals {
   # path.module is infrastructure/terraform/3_ingestion, so ../../.. is the repo root.
   ingest_zip = "${path.module}/../../../backend/services/knowledge_base/ingestion/lambda_function.zip"
+
+  # When var.lambda_artifacts_bucket is set (environment roots), the zip comes
+  # from that bucket, where .github/scripts/ci/upload_artifacts.sh puts it.
+  # Otherwise the local zip above is used.
+  use_s3     = var.lambda_artifacts_bucket != ""
+  ingest_key = "ingest/lambda_function.zip"
+}
+
+# Reads the uploaded zip so a new upload changes s3_object_version and
+# redeploys the function. version_id is empty on an unversioned bucket.
+data "aws_s3_object" "ingest" {
+  count  = local.use_s3 ? 1 : 0
+  bucket = var.lambda_artifacts_bucket
+  key    = local.ingest_key
 }
 
 resource "aws_lambda_function" "ingest" {
-  function_name = "alex-ingest"
+  function_name = "${var.name_prefix}-ingest"
   role          = aws_iam_role.lambda_role.arn
 
-  filename         = local.ingest_zip
-  source_code_hash = fileexists(local.ingest_zip) ? filebase64sha256(local.ingest_zip) : null
+  filename         = local.use_s3 ? null : local.ingest_zip
+  source_code_hash = !local.use_s3 && fileexists(local.ingest_zip) ? filebase64sha256(local.ingest_zip) : null
+
+  s3_bucket         = local.use_s3 ? var.lambda_artifacts_bucket : null
+  s3_key            = local.use_s3 ? local.ingest_key : null
+  s3_object_version = local.use_s3 ? try(coalesce(data.aws_s3_object.ingest[0].version_id), null) : null
 
   handler     = "ingest_s3Vector.lambda_handler"
   runtime     = "python3.12"
@@ -188,7 +206,7 @@ resource "aws_lambda_function" "ingest" {
 
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "lambda_logs" {
-  name              = "/aws/lambda/alex-ingest"
+  name              = "/aws/lambda/${var.name_prefix}-ingest"
   retention_in_days = 7
 
   tags = {
@@ -203,7 +221,7 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
 
 # REST API
 resource "aws_api_gateway_rest_api" "api" {
-  name        = "alex-api"
+  name        = "${var.name_prefix}-api"
   description = "Alex Financial Planner API"
 
   endpoint_configuration {
@@ -283,7 +301,7 @@ resource "aws_api_gateway_stage" "api" {
 
 # API Key
 resource "aws_api_gateway_api_key" "api_key" {
-  name = "alex-api-key"
+  name = "${var.name_prefix}-api-key"
 
   tags = {
     Project = "alex"
@@ -293,7 +311,7 @@ resource "aws_api_gateway_api_key" "api_key" {
 
 # Usage Plan
 resource "aws_api_gateway_usage_plan" "plan" {
-  name = "alex-usage-plan"
+  name = "${var.name_prefix}-usage-plan"
 
   api_stages {
     api_id = aws_api_gateway_rest_api.api.id

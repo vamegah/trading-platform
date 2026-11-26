@@ -1,17 +1,17 @@
 output "dashboard_urls" {
   description = "URLs to access the CloudWatch dashboards"
-  value = {
-    ai_model_usage    = "https://console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${aws_cloudwatch_dashboard.ai_model_usage.dashboard_name}"
-    agent_performance = "https://console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${aws_cloudwatch_dashboard.agent_performance.dashboard_name}"
-  }
+  value = var.enabled ? {
+    ai_model_usage    = "https://console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${local.ai_model_usage_dashboard}"
+    agent_performance = "https://console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${local.agent_performance_dashboard}"
+  } : null
 }
 
 output "dashboard_names" {
   description = "Names of the created dashboards"
-  value = {
-    ai_model_usage    = aws_cloudwatch_dashboard.ai_model_usage.dashboard_name
-    agent_performance = aws_cloudwatch_dashboard.agent_performance.dashboard_name
-  }
+  value = var.enabled ? {
+    ai_model_usage    = local.ai_model_usage_dashboard
+    agent_performance = local.agent_performance_dashboard
+  } : null
 }
 
 output "setup_instructions" {
@@ -21,8 +21,8 @@ output "setup_instructions" {
     ✅ CloudWatch Dashboards deployed successfully!
 
     Dashboards Created:
-    - AI Model Usage Dashboard: ${aws_cloudwatch_dashboard.ai_model_usage.dashboard_name}
-    - Agent Performance Dashboard: ${aws_cloudwatch_dashboard.agent_performance.dashboard_name}
+    - AI Model Usage Dashboard: ${local.ai_model_usage_dashboard}
+    - Agent Performance Dashboard: ${local.agent_performance_dashboard}
 
     To view the dashboards:
     1. Sign in to AWS Console
@@ -30,8 +30,8 @@ output "setup_instructions" {
     3. Select your dashboard from the list
 
     Or use these direct links:
-    - AI Model Usage: https://console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${aws_cloudwatch_dashboard.ai_model_usage.dashboard_name}
-    - Agent Performance: https://console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${aws_cloudwatch_dashboard.agent_performance.dashboard_name}
+    - AI Model Usage: https://console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${local.ai_model_usage_dashboard}
+    - Agent Performance: https://console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${local.agent_performance_dashboard}
 
     Dashboard Features:
 
