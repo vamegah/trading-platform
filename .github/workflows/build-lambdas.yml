@@ -16,6 +16,9 @@ on:
       build_sha:
         description: "SHA of the build artifacts"
         value: ${{ jobs.build.outputs.build_sha }}
+      api_image_uri:
+        description: "ECR URI of the API Lambda container image"
+        value: ${{ jobs.build.outputs.api_image_uri }}
 
 concurrency:
   group: build-lambdas-${{ inputs.environment }}
@@ -36,6 +39,7 @@ jobs:
       contents: read
     outputs:
       build_sha: ${{ steps.meta.outputs.build_sha }}
+      api_image_uri: ${{ steps.api_image.outputs.image_uri }}
 
     steps:
       - uses: actions/checkout@v7
@@ -93,8 +97,11 @@ jobs:
       - name: Build ingest
         run: bash .github/scripts/ci/build_one_lambda.sh services/knowledge_base/ingestion ingest
 
-      - name: Build api
-        run: bash .github/scripts/ci/build_one_lambda.sh api_gateway api
-
       - name: Upload Lambda artifacts
         run: bash .github/scripts/ci/upload_artifacts.sh "$ARTIFACTS_BUCKET" "${GITHUB_SHA}"
+
+      # The API Lambda runs from a container image: it needs most of backend/
+      # and the root requirements.txt, which exceed the 250 MB zip limit.
+      - name: Build and push API image
+        id: api_image
+        run: bash .github/scripts/ci/build_api_image.sh "trading-${{ inputs.environment }}-api" "${GITHUB_SHA}"

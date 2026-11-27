@@ -1,0 +1,14 @@
+# Used instead of the root .dockerignore when building api-lambda.Dockerfile.
+# Only requirements.txt and backend/ are copied into the image.
+*
+!requirements.txt
+!backend
+**/__pycache__
+**/*.py[cod]
+**/.venv
+**/*.zip
+**/.env
+**/.env.*
+**/.pytest_cache
+**/.ruff_cache
+**/node_modules

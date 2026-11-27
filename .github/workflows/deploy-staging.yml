@@ -29,6 +29,7 @@ jobs:
       artifacts_bucket: trading-staging-lambda-artifacts
       aws_region: us-east-1
       tfvars_secret: TFVARS_STAGING
+      api_image_uri: ${{ needs.build.outputs.api_image_uri }}
     secrets: inherit
 
   frontend:
@@ -56,11 +57,12 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
 
+      # API Gateway only routes /api/*, so the health check is /api/health.
       - name: API health
         run: |
           API="${{ needs.terraform.outputs.api_endpoint }}"
           for i in {1..10}; do
-            if curl -fsS "$API/health" >/dev/null; then
+            if curl -fsS "$API/api/health" >/dev/null; then
               echo "API healthy"; exit 0
             fi
             echo "Waiting for API… ($i/10)"
