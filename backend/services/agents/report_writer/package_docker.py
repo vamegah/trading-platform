@@ -20,7 +20,8 @@ HANDLER_FILES = [
 ]
 
 REQUIRED_PACKAGES = [
-    "boto3",
+    # boto3/botocore are not bundled: the Lambda Python runtime provides them,
+    # and bundling them pushes the zip past Lambda's 250 MB unzipped limit.
     "pydantic",
     "python-dotenv",
     "tenacity",
@@ -68,7 +69,10 @@ def package() -> Path:
             LAMBDA_IMAGE,
             "-c",
             "cd /build && "
-            "(pip install --target ./package -r requirements.txt && "
+            "(pip install --no-compile --target ./package -r requirements.txt && "
+            "rm -rf ./package/boto3 ./package/boto3-*.dist-info "
+            "./package/botocore ./package/botocore-*.dist-info "
+            "./package/s3transfer ./package/s3transfer-*.dist-info && "
             "cp -r /db ./package/db && "
             "rm -rf ./package/db/__pycache__); "
             "status=$?" + chown + "; exit $status",
