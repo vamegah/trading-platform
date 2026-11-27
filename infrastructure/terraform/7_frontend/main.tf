@@ -20,10 +20,12 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 # Part 5 Database and Part 6 Agents values. Environment roots pass them in as
-# variables (module outputs). When they are not passed, a standalone run reads
-# them from the local state of the sibling stacks.
+# variables (module outputs) and set read_sibling_state = false. A standalone
+# run reads them from the local state of the sibling stacks. count must not
+# depend on the passed-in values: in an environment root they are unknown until
+# apply, and Terraform cannot plan a count it cannot predict.
 data "terraform_remote_state" "database" {
-  count   = var.aurora_cluster_arn == null || var.aurora_secret_arn == null || var.database_name == null ? 1 : 0
+  count   = var.read_sibling_state ? 1 : 0
   backend = "local"
   config = {
     path = "../5_database/terraform.tfstate"
@@ -31,7 +33,7 @@ data "terraform_remote_state" "database" {
 }
 
 data "terraform_remote_state" "agents" {
-  count   = var.sqs_queue_arn == null || var.sqs_queue_url == null ? 1 : 0
+  count   = var.read_sibling_state ? 1 : 0
   backend = "local"
   config = {
     path = "../6_agents/terraform.tfstate"

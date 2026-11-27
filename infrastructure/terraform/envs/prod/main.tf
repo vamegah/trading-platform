@@ -100,6 +100,7 @@ module "frontend" {
   database_name           = module.database.database_name
   sqs_queue_arn           = module.agents.sqs_queue_arn
   sqs_queue_url           = module.agents.sqs_queue_url
+  read_sibling_state      = false
 
   # The frontend does not use Clerk. The stack variable has no default.
   clerk_jwks_url = ""

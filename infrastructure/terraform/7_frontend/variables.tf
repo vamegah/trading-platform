@@ -28,9 +28,15 @@ variable "lambda_artifacts_bucket" {
   default     = ""
 }
 
-# Values from the database and agents stacks. Environment roots pass them in.
-# When left null, a standalone run reads them from ../5_database and
-# ../6_agents local state.
+# Values from the database and agents stacks. Environment roots pass them in
+# and set read_sibling_state = false. A standalone run leaves them null and
+# reads them from ../5_database and ../6_agents local state.
+variable "read_sibling_state" {
+  description = "Read database and agents values from the sibling stacks' local state. Environment roots set this to false and pass the values in."
+  type        = bool
+  default     = true
+}
+
 variable "aurora_cluster_arn" {
   description = "ARN of the Aurora cluster from 5_database"
   type        = string
