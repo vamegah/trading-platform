@@ -75,7 +75,7 @@ jobs:
         run: python -c "from backend.shared.database import Base; import backend.shared.models; print(len(Base.metadata.tables))"
       - name: Upload pytest cache on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pytest-cache-${{ github.sha }}
           path: .pytest_cache
@@ -97,14 +97,14 @@ jobs:
       - name: Frontend release gates
         run: npm --prefix frontend run test:validate
       - name: Upload frontend dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-dist-${{ github.sha }}
           path: frontend/dist
           if-no-files-found: error
       - name: Upload frontend chart evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-chart-evidence-${{ github.sha }}
           path: frontend/release-evidence/*.json
@@ -228,7 +228,7 @@ jobs:
       - name: Review implemented M9 tasks
         run: python scripts/release_candidate_review.py --output release-review-m9.json
       - name: Upload release readiness evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-readiness-${{ github.sha }}
           path: |
