@@ -93,3 +93,54 @@ jobs:
       - name: Terraform validate
         working-directory: infrastructure/terraform/${{ matrix.stack }}
         run: terraform validate -no-color
+
+  # Builds every zip Lambda the same way build-lambdas.yml does, without AWS
+  # access, so packaging failures show up on the PR instead of in a deploy.
+  lambda-builds:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: planner, src: services/agents/portfolio_planner, zip: planner_lambda.zip, db: true }
+          - { name: tagger, src: services/agents/instrument_tagger, zip: tagger_lambda.zip, db: true }
+          - { name: reporter, src: services/agents/report_writer, zip: reporter_lambda.zip, db: true }
+          - { name: charter, src: services/agents/chart_maker, zip: charter_lambda.zip, db: true }
+          - { name: retirement, src: services/agents/retirement_specialist, zip: retirement_lambda.zip, db: true }
+          - { name: scheduler, src: services/scheduler, zip: lambda_function.zip, db: false }
+          - { name: ingest, src: services/knowledge_base/ingestion, zip: lambda_function.zip, db: false }
+          - { name: api, src: api_gateway, zip: api_lambda.zip, db: false }
+    name: lambda-builds (${{ matrix.name }})
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.x"
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Prime Docker
+        run: docker pull public.ecr.aws/lambda/python:3.12
+
+      - name: Build ${{ matrix.name }}
+        run: bash .github/scripts/ci/build_one_lambda.sh "${{ matrix.src }}" "${{ matrix.name }}"
+
+      - name: Check the zip contains the db package
+        if: matrix.db
+        env:
+          ZIP: backend/${{ matrix.src }}/${{ matrix.zip }}
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+          import zipfile
+
+          names = set(zipfile.ZipFile(os.environ["ZIP"]).namelist())
+          missing = [n for n in ("db/__init__.py", "db/client.py", "db/models.py", "db/schemas.py", "lambda_handler.py") if n not in names]
+          if missing:
+              sys.exit(f"{os.environ['ZIP']} is missing: {', '.join(missing)}")
+          print(f"{os.environ['ZIP']}: {len(names)} files, db package present")
+          PY
