@@ -128,6 +128,32 @@ jobs:
       - name: Build ${{ matrix.name }}
         run: bash .github/scripts/ci/build_one_lambda.sh "${{ matrix.src }}" "${{ matrix.name }}"
 
+      # Lambda rejects zip packages whose unzipped size is 262,144,000 bytes or more.
+      - name: Check the unzipped size
+        env:
+          ZIP: backend/${{ matrix.src }}/${{ matrix.zip }}
+        run: |
+          python - <<'PY'
+          import collections
+          import os
+          import sys
+          import zipfile
+
+          limit = 262_144_000
+          path = os.environ["ZIP"]
+          infos = zipfile.ZipFile(path).infolist()
+          total = sum(i.file_size for i in infos)
+          by_top = collections.Counter()
+          for i in infos:
+              by_top[i.filename.split("/", 1)[0]] += i.file_size
+          print(f"{path}: {os.path.getsize(path) / 1e6:.1f} MB zipped, {total / 1e6:.1f} MB unzipped (limit {limit / 1e6:.1f} MB)")
+          print("Largest top-level entries:")
+          for name, size in by_top.most_common(15):
+              print(f"  {size / 1e6:8.1f} MB  {name}")
+          if total >= limit:
+              sys.exit(f"{path} is {total / 1e6:.1f} MB unzipped, over the Lambda limit")
+          PY
+
       - name: Check the zip contains the db package
         if: matrix.db
         env:
