@@ -74,10 +74,10 @@ def package() -> Path:
             LAMBDA_IMAGE,
             "-c",
             "cd /build && "
-            "pip install --target ./package -r requirements.txt && "
+            "(pip install --target ./package -r requirements.txt && "
             "cp -r /db ./package/db && "
-            "find ./package/db -name __pycache__ -prune -exec rm -rf {} +"
-            + chown,
+            "rm -rf ./package/db/__pycache__); "
+            "status=$?" + chown + "; exit $status",
         ]
         _run(docker_cmd)
 
