@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Package the Retirement Specialist Lambda using Docker."""
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -34,7 +35,16 @@ def _run(cmd):
 def package() -> Path:
     retirement_dir = Path(__file__).parent.resolve()
     backend_dir = retirement_dir.parents[2]
-    db_dir = backend_dir / "db"
+    # The platform DB package lives in backend/database/src. The handlers
+    # import it as `db`, so it is copied into the zip under that name.
+    db_src = backend_dir / "database" / "src"
+    if not (db_src / "__init__.py").exists():
+        print(f"Missing DB package: {db_src}")
+        sys.exit(1)
+    # The container writes as root. Hand the files back to this user so the
+    # handler copy below works on Linux CI runners.
+    owner = f"{os.getuid()}:{os.getgid()}" if hasattr(os, "getuid") else ""
+    chown = f" && chown -R {owner} ./package" if owner else ""
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -44,13 +54,15 @@ def package() -> Path:
             "docker", "run", "--rm",
             "--platform", "linux/amd64",
             "-v", f"{tmp_path}:/build",
-            "-v", f"{db_dir}:/db",
+            "-v", f"{db_src}:/db:ro",
             "--entrypoint", "/bin/bash",
             LAMBDA_IMAGE,
             "-c",
             "cd /build && "
-            "pip install --target ./package -r requirements.txt && "
-            "pip install --target ./package --no-deps /db",
+            "(pip install --target ./package -r requirements.txt && "
+            "cp -r /db ./package/db && "
+            "rm -rf ./package/db/__pycache__); "
+            "status=$?" + chown + "; exit $status",
         ])
 
         package_dir = tmp_path / "package"
