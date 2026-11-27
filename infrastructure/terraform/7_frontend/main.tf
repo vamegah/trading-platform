@@ -328,12 +328,23 @@ resource "aws_apigatewayv2_route" "api_options" {
 }
 
 # Lambda permission for API Gateway
+#
+# The permission lives in the function's resource policy, so replacing the
+# function (for example switching package_type between Zip and Image) deletes
+# it. function_name stays the same, so Terraform would not notice;
+# replace_triggered_by recreates the permission with the function. The
+# statement_id changed when the API moved to a container image, which recreates
+# the permission that the replaced function lost.
 resource "aws_lambda_permission" "api_gw" {
-  statement_id  = "AllowExecutionFromAPIGateway"
+  statement_id  = "AllowInvokeFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.api.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+
+  lifecycle {
+    replace_triggered_by = [aws_lambda_function.api.package_type]
+  }
 }
 
 # CloudFront distribution
