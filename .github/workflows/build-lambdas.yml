@@ -28,6 +28,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # The deploy role's trust policy only accepts OIDC tokens from the staging
+    # and prod environments, so this job must run in one.
+    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read
