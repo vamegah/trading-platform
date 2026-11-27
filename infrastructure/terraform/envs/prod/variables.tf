@@ -1,4 +1,11 @@
 # Passed by terraform-apply.yml with -var, not through terraform.auto.tfvars.json.
+variable "api_image_uri" {
+  description = "ECR image URI for the API Lambda. terraform-apply.yml passes the image that build-lambdas.yml pushed; CI no longer uploads an API zip."
+  type        = string
+  default     = ""
+}
+
+# Passed by terraform-apply.yml with -var, not through terraform.auto.tfvars.json.
 variable "lambda_artifacts_bucket" {
   description = "Existing S3 bucket holding the Lambda zips uploaded by build-lambdas.yml. Terraform reads from it and does not create it."
   type        = string

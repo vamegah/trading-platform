@@ -19,7 +19,8 @@ upload() {
     --no-progress
 }
 
-# Local paths match build_one_lambda.sh and the Terraform stacks.
+# Local paths match build_one_lambda.sh and the Terraform stacks. The API Lambda
+# is a container image (build_api_image.sh), so it has no zip here.
 upload "$ROOT/backend/services/agents/portfolio_planner/planner_lambda.zip"         "planner/planner_lambda.zip"
 upload "$ROOT/backend/services/agents/instrument_tagger/tagger_lambda.zip"          "tagger/tagger_lambda.zip"
 upload "$ROOT/backend/services/agents/report_writer/reporter_lambda.zip"            "reporter/reporter_lambda.zip"
@@ -27,6 +28,5 @@ upload "$ROOT/backend/services/agents/chart_maker/charter_lambda.zip"           
 upload "$ROOT/backend/services/agents/retirement_specialist/retirement_lambda.zip"  "retirement/retirement_lambda.zip"
 upload "$ROOT/backend/services/scheduler/lambda_function.zip"                       "scheduler/lambda_function.zip"
 upload "$ROOT/backend/services/knowledge_base/ingestion/lambda_function.zip"        "ingest/lambda_function.zip"
-upload "$ROOT/backend/api_gateway/api_lambda.zip"                                   "api/api_lambda.zip"
 
 echo "All artifacts uploaded for $SHA"

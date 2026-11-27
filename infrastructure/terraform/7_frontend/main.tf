@@ -55,6 +55,9 @@ locals {
   use_s3  = var.lambda_artifacts_bucket != ""
   api_key = "api/api_lambda.zip"
 
+  # The environment roots deploy the API as a container image instead.
+  use_api_image = var.api_image_uri != ""
+
   # Built by scripts/deploy.py or
   # bash .github/scripts/ci/build_one_lambda.sh api_gateway api
   # path.module is infrastructure/terraform/7_frontend, so ../../.. is the repo root.
@@ -116,7 +119,7 @@ resource "aws_s3_bucket_policy" "frontend" {
 # Reads the uploaded zip so a new upload changes s3_object_version and
 # redeploys the function. version_id is empty on an unversioned bucket.
 data "aws_s3_object" "api" {
-  count  = local.use_s3 ? 1 : 0
+  count  = local.use_s3 && !local.use_api_image ? 1 : 0
   bucket = var.lambda_artifacts_bucket
   key    = local.api_key
 }
@@ -220,21 +223,29 @@ resource "aws_iam_role_policy" "api_lambda_invoke" {
 }
 
 # Lambda function for API
+# With var.api_image_uri set (environment roots), the function runs the
+# container image built by .github/scripts/ci/build_api_image.sh. Otherwise it
+# uses the zip, from the artifacts bucket or the local build.
 resource "aws_lambda_function" "api" {
-  filename         = local.use_s3 ? null : local.api_zip
-  function_name    = "${local.name_prefix}-api"
-  role             = aws_iam_role.api_lambda_role.arn
-  handler          = "lambda_handler.handler"
-  source_code_hash = !local.use_s3 && fileexists(local.api_zip) ? filebase64sha256(local.api_zip) : null
+  function_name = "${local.name_prefix}-api"
+  role          = aws_iam_role.api_lambda_role.arn
+  package_type  = local.use_api_image ? "Image" : "Zip"
+  image_uri     = local.use_api_image ? var.api_image_uri : null
 
-  s3_bucket         = local.use_s3 ? var.lambda_artifacts_bucket : null
-  s3_key            = local.use_s3 ? local.api_key : null
-  s3_object_version = local.use_s3 ? try(coalesce(data.aws_s3_object.api[0].version_id), null) : null
-  runtime           = "python3.12"
+  filename         = !local.use_api_image && !local.use_s3 ? local.api_zip : null
+  handler          = local.use_api_image ? null : "lambda_handler.handler"
+  runtime          = local.use_api_image ? null : "python3.12"
+  source_code_hash = !local.use_api_image && !local.use_s3 && fileexists(local.api_zip) ? filebase64sha256(local.api_zip) : null
+
+  s3_bucket         = !local.use_api_image && local.use_s3 ? var.lambda_artifacts_bucket : null
+  s3_key            = !local.use_api_image && local.use_s3 ? local.api_key : null
+  s3_object_version = !local.use_api_image && local.use_s3 ? try(coalesce(data.aws_s3_object.api[0].version_id), null) : null
   architectures     = ["x86_64"]
   timeout           = 30
-  memory_size       = 512
-  tags              = local.common_tags
+  # The image imports pandas, litellm and the rest of backend/; more memory
+  # also means more CPU for the cold start.
+  memory_size = local.use_api_image ? 1024 : 512
+  tags        = local.common_tags
 
   environment {
     variables = {

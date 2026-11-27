@@ -44,6 +44,7 @@ jobs:
       artifacts_bucket: trading-prod-lambda-artifacts
       aws_region: us-east-1
       tfvars_secret: TFVARS_PROD
+      api_image_uri: ${{ needs.build.outputs.api_image_uri }}
     secrets: inherit
 
   # Fail-closed go-live gate; runs before anything is built or applied.

@@ -109,7 +109,6 @@ jobs:
           - { name: retirement, src: services/agents/retirement_specialist, zip: retirement_lambda.zip, db: true }
           - { name: scheduler, src: services/scheduler, zip: lambda_function.zip, db: false }
           - { name: ingest, src: services/knowledge_base/ingestion, zip: lambda_function.zip, db: false }
-          - { name: api, src: api_gateway, zip: api_lambda.zip, db: false }
     name: lambda-builds (${{ matrix.name }})
     steps:
       - uses: actions/checkout@v7
@@ -170,3 +169,73 @@ jobs:
               sys.exit(f"{os.environ['ZIP']} is missing: {', '.join(missing)}")
           print(f"{os.environ['ZIP']}: {len(names)} files, db package present")
           PY
+
+  # The API Lambda runs from a container image (build-lambdas.yml pushes it).
+  # Build it here without pushing and invoke /api/health through the Lambda
+  # runtime interface emulator that ships in the AWS base image.
+  api-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the API image
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --provenance=false \
+            --sbom=false \
+            -f infrastructure/docker/api-lambda.Dockerfile \
+            -t trading-api-lambda:ci \
+            --load \
+            .
+          docker image inspect trading-api-lambda:ci --format 'Image size: {{.Size}} bytes'
+
+      - name: Invoke /api/health
+        run: |
+          docker run -d --name api-lambda -p 9000:8080 trading-api-lambda:ci
+          cat > event.json <<'JSON'
+          {
+            "version": "2.0",
+            "routeKey": "ANY /api/{proxy+}",
+            "rawPath": "/api/health",
+            "rawQueryString": "",
+            "headers": {"host": "localhost", "user-agent": "pr-validate"},
+            "requestContext": {
+              "accountId": "000000000000",
+              "apiId": "ci",
+              "domainName": "localhost",
+              "domainPrefix": "ci",
+              "http": {"method": "GET", "path": "/api/health", "protocol": "HTTP/1.1", "sourceIp": "127.0.0.1", "userAgent": "pr-validate"},
+              "requestId": "ci",
+              "routeKey": "ANY /api/{proxy+}",
+              "stage": "$default",
+              "time": "01/Jan/2026:00:00:00 +0000",
+              "timeEpoch": 1767225600000
+            },
+            "isBase64Encoded": false
+          }
+          JSON
+          for i in {1..10}; do
+            if curl -fsS -o response.json -d @event.json http://localhost:9000/2015-03-31/functions/function/invocations; then
+              break
+            fi
+            sleep 3
+          done
+          echo "Response:"; cat response.json; echo
+          python - <<'PY'
+          import json
+          import sys
+
+          response = json.load(open("response.json"))
+          status = response.get("statusCode")
+          if status != 200:
+              sys.exit(f"/api/health returned {status}, expected 200")
+          body = json.loads(response.get("body") or "{}")
+          print(f"/api/health -> 200, status={body.get('status')}")
+          PY
+
+      - name: Container logs
+        if: always()
+        run: docker logs api-lambda 2>&1 | tail -n 60 || true

@@ -15,6 +15,11 @@ on:
       tfvars_secret:
         required: true
         type: string
+      api_image_uri:
+        description: ECR URI of the API Lambda image (from build-lambdas.yml)
+        required: false
+        type: string
+        default: ""
     outputs:
       api_endpoint:
         description: API endpoint from terraform output
@@ -101,9 +106,12 @@ jobs:
 
       - name: Terraform plan
         working-directory: infrastructure/terraform/envs/${{ inputs.environment }}
+        env:
+          API_IMAGE_URI: ${{ inputs.api_image_uri }}
         run: |
           terraform plan \
             -var="lambda_artifacts_bucket=${{ inputs.artifacts_bucket }}" \
+            -var="api_image_uri=${API_IMAGE_URI}" \
             -out=plan.tfplan
 
       - name: Terraform apply

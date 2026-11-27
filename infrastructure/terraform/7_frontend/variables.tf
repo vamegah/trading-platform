@@ -31,6 +31,12 @@ variable "lambda_artifacts_bucket" {
 # Values from the database and agents stacks. Environment roots pass them in
 # and set read_sibling_state = false. A standalone run leaves them null and
 # reads them from ../5_database and ../6_agents local state.
+variable "api_image_uri" {
+  description = "ECR image URI for the API Lambda. When set, the function uses package_type Image and the zip settings are ignored. Environment roots pass the image built by build-lambdas.yml."
+  type        = string
+  default     = ""
+}
+
 variable "read_sibling_state" {
   description = "Read database and agents values from the sibling stacks' local state. Environment roots set this to false and pass the values in."
   type        = bool
