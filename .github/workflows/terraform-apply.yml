@@ -30,6 +30,9 @@ on:
       cloudfront_distribution_id:
         description: CloudFront distribution ID from terraform output
         value: ${{ jobs.apply.outputs.cloudfront_distribution_id }}
+      cloudfront_url:
+        description: Public frontend URL (https://<domain>) from terraform output
+        value: ${{ jobs.apply.outputs.cloudfront_url }}
 
 permissions:
   id-token: write
@@ -52,6 +55,7 @@ jobs:
       api_endpoint: ${{ steps.outputs.outputs.api_endpoint }}
       frontend_bucket: ${{ steps.outputs.outputs.frontend_bucket }}
       cloudfront_distribution_id: ${{ steps.outputs.outputs.cloudfront_distribution_id }}
+      cloudfront_url: ${{ steps.outputs.outputs.cloudfront_url }}
 
     steps:
       - uses: actions/checkout@v7
@@ -125,3 +129,4 @@ jobs:
           echo "api_endpoint=$(terraform output -raw api_endpoint)" >> "$GITHUB_OUTPUT"
           echo "frontend_bucket=$(terraform output -raw frontend_bucket)" >> "$GITHUB_OUTPUT"
           echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "cloudfront_url=$(terraform output -raw cloudfront_url)" >> "$GITHUB_OUTPUT"
