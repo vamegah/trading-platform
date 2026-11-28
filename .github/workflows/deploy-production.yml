@@ -116,7 +116,13 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
+      # An annotated tag needs a committer identity, which the runner does not set.
+      # deployed-prod-* does not match the v*.*.* deploy trigger, and tags pushed
+      # with GITHUB_TOKEN do not start workflows, so this cannot loop.
       - name: Annotate release
         run: |
-          git tag -a "deployed-prod-$(date +%Y%m%d%H%M)" -m "prod deploy ${GITHUB_SHA}"
-          git push origin --tags
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          tag="deployed-prod-$(date -u +%Y%m%d%H%M)"
+          git tag -a "$tag" -m "prod deploy ${GITHUB_SHA}"
+          git push origin "refs/tags/$tag"
