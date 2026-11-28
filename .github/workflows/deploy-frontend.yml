@@ -20,6 +20,7 @@ on:
         required: true
         type: string
       api_url:
+        description: Base URL the built app sends /api/* requests to (no trailing slash)
         required: true
         type: string
 
@@ -66,7 +67,8 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          VITE_API_URL: ${{ inputs.api_url }}
+          # frontend/src/services/api.js reads VITE_API_BASE_URL.
+          VITE_API_BASE_URL: ${{ inputs.api_url }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets[inputs.clerk_key_secret] }}
         run: npm run build
 
