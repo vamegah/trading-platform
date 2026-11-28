@@ -1,68 +1,210 @@
-name: Destroy Environment
+name: destroy
+
+# Removes one environment that deploy-staging / deploy-production created:
+# everything in its Terraform state (infrastructure/terraform/envs/<env>),
+# its API image repository (trading-<env>-api) and its Lambda log groups.
+#
+# It keeps what was created by hand once (see infrastructure/terraform/envs/README.md):
+# the Terraform state bucket and lock table, the Lambda artifact buckets, the
+# deploy role and the GitHub OIDC provider. Running deploy-staging or
+# deploy-production again recreates the environment.
+#
+# Aurora has no final snapshot, so its data is deleted for good.
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to destroy'
+        description: Environment to destroy
         required: true
         type: choice
         options:
-          - dev
-          - test
+          - staging
           - prod
       confirm:
-        description: 'Type the environment name to confirm destruction'
+        description: Type the environment name again to confirm
         required: true
 
 permissions:
   id-token: write
   contents: read
 
+# Same group as terraform-apply.yml, so a destroy never overlaps an apply.
+concurrency:
+  group: terraform-apply-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
 jobs:
-  destroy:
-    name: Destroy ${{ github.event.inputs.environment }}
+  guard:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
-    
     steps:
-      - name: Verify confirmation
+      - name: Confirm
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          CONFIRM: ${{ inputs.confirm }}
         run: |
-          if [ "${{ github.event.inputs.confirm }}" != "${{ github.event.inputs.environment }}" ]; then
-            echo "❌ Confirmation does not match environment name!"
-            echo "You entered: '${{ github.event.inputs.confirm }}'"
-            echo "Expected: '${{ github.event.inputs.environment }}'"
+          if [[ "$CONFIRM" != "$ENVIRONMENT" ]]; then
+            echo "::error::Confirmation '$CONFIRM' does not match environment '$ENVIRONMENT'"
             exit 1
           fi
-          echo "✅ Destruction confirmed for ${{ github.event.inputs.environment }}"
+          echo "Destroying $ENVIRONMENT"
 
-      - name: Checkout code
-        uses: actions/checkout@v7
+  destroy:
+    needs: [guard]
+    runs-on: ubuntu-latest
+    # The deploy role only trusts the staging and prod environments, and prod
+    # requires approval.
+    environment: ${{ inputs.environment }}
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
+      TF_DIR: infrastructure/terraform/envs/${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v7
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: github-actions-destroy
-          aws-region: ${{ secrets.DEFAULT_AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
+      - uses: hashicorp/setup-terraform@v4
         with:
-          terraform_wrapper: false  # Important: disable wrapper to get raw outputs
+          terraform_version: "1.9.x"
+          terraform_wrapper: false
 
-      - name: Run Destroy Script
-        run: |
-          # Set environment variables for the script
-          export AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
-          export DEFAULT_AWS_REGION=${{ secrets.DEFAULT_AWS_REGION }}
-          
-          # Make script executable and run it
-          chmod +x scripts/destroy.sh
-          ./scripts/destroy.sh ${{ github.event.inputs.environment }}
+      # Required variables (bedrock_model_id, polygon_api_key) have no default.
+      - name: Materialise tfvars from secret
         env:
-          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
-
-      - name: Destruction Complete
+          TFVARS_JSON: ${{ secrets[format('TFVARS_{0}', inputs.environment == 'prod' && 'PROD' || 'STAGING')] }}
         run: |
-          echo "✅ Environment ${{ github.event.inputs.environment }} has been destroyed!"
+          if [[ -z "$TFVARS_JSON" ]]; then
+            echo "::error::Missing TFVARS secret for $ENVIRONMENT" >&2
+            exit 1
+          fi
+          echo "$TFVARS_JSON" > "$TF_DIR/terraform.auto.tfvars.json"
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_DIR }}
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE }}
+          TF_STATE_REGION: ${{ vars.TF_STATE_REGION }}
+        run: |
+          for name in TF_STATE_BUCKET TF_LOCK_TABLE TF_STATE_REGION; do
+            if [[ -z "${!name}" ]]; then
+              echo "Missing repository variable $name" >&2
+              exit 1
+            fi
+          done
+          terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=envs/${ENVIRONMENT}/terraform.tfstate" \
+            -backend-config="region=${TF_STATE_REGION}" \
+            -backend-config="dynamodb_table=${TF_LOCK_TABLE}" \
+            -backend-config="encrypt=true"
+
+      - name: Show what will be destroyed
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          count="$(terraform state list | wc -l)"
+          echo "Resources in state: $count"
+          terraform state list
+
+      # Terraform will not delete a bucket that still holds objects, and none of
+      # these buckets set force_destroy. Delete every object version and delete
+      # marker in each bucket the state manages.
+      - name: Empty the buckets Terraform manages
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          empty_bucket() {
+            local bucket="$1"
+            if ! aws s3api head-bucket --bucket "$bucket" 2>/dev/null; then
+              echo "Skip $bucket (not found)"
+              return
+            fi
+            echo "Emptying $bucket"
+            aws s3 rm "s3://$bucket" --recursive --only-show-errors
+            while :; do
+              aws s3api list-object-versions --bucket "$bucket" --max-items 1000 --output json \
+                --query '{Objects: [Versions[].{Key: Key, VersionId: VersionId}, DeleteMarkers[].{Key: Key, VersionId: VersionId}][]}' \
+                > /tmp/versions.json
+              count="$(jq '(.Objects // []) | length' /tmp/versions.json)"
+              if [[ "$count" -eq 0 ]]; then
+                break
+              fi
+              jq '{Objects: .Objects, Quiet: true}' /tmp/versions.json > /tmp/delete.json
+              aws s3api delete-objects --bucket "$bucket" --delete file:///tmp/delete.json > /dev/null
+              echo "  deleted $count versions"
+            done
+          }
+
+          mapfile -t addresses < <(terraform state list | grep -E 'aws_s3_bucket\.[A-Za-z0-9_-]+(\[[0-9]+\])?$' || true)
+          for address in "${addresses[@]}"; do
+            bucket="$(terraform state show -no-color "$address" | sed -n 's/^ *bucket *= *"\(.*\)"$/\1/p' | head -n 1)"
+            if [[ -n "$bucket" ]]; then
+              empty_bucket "$bucket"
+            fi
+          done
+
+      # The configuration reads api/api_lambda.zip from the artifacts bucket
+      # unless api_image_uri is set, and CI no longer uploads that zip, so pass
+      # the image the function runs (or a placeholder once it is gone).
+      - name: Terraform destroy
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          account="$(aws sts get-caller-identity --query Account --output text)"
+          image_uri="$(aws lambda get-function --function-name "trading-${ENVIRONMENT}-api" \
+            --query Code.ImageUri --output text 2>/dev/null || true)"
+          if [[ -z "$image_uri" || "$image_uri" == "None" ]]; then
+            image_uri="${account}.dkr.ecr.${AWS_REGION}.amazonaws.com/trading-${ENVIRONMENT}-api:destroy"
+          fi
+          terraform destroy -auto-approve -lock-timeout=10m \
+            -var="lambda_artifacts_bucket=trading-${ENVIRONMENT}-lambda-artifacts" \
+            -var="api_image_uri=${image_uri}"
+
+      # Created by build_api_image.sh, outside Terraform.
+      - name: Delete the API image repository
+        run: |
+          repo="trading-${ENVIRONMENT}-api"
+          if aws ecr describe-repositories --repository-names "$repo" > /dev/null 2>&1; then
+            aws ecr delete-repository --repository-name "$repo" --force > /dev/null
+            echo "Deleted ECR repository $repo"
+          else
+            echo "ECR repository $repo not found"
+          fi
+
+      # Lambda creates log groups for functions whose log group Terraform does
+      # not manage; they would otherwise stay behind.
+      - name: Delete leftover Lambda log groups
+        run: |
+          prefix="/aws/lambda/trading-${ENVIRONMENT}-"
+          groups="$(aws logs describe-log-groups --log-group-name-prefix "$prefix" \
+            --query 'logGroups[].logGroupName' --output text)"
+          for group in $groups; do
+            aws logs delete-log-group --log-group-name "$group"
+            echo "Deleted $group"
+          done
+          if [[ -z "$groups" ]]; then
+            echo "No log groups under $prefix"
+          fi
+
+      - name: Summary
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          left="$(terraform state list | wc -l)"
+          echo "Resources left in state: $left"
+          if [[ "$left" -ne 0 ]]; then
+            terraform state list
+            exit 1
+          fi
+          {
+            echo "### Destroyed \`${ENVIRONMENT}\`"
+            echo ""
+            echo "Kept (created once by hand): the Terraform state bucket and lock table,"
+            echo "the Lambda artifact buckets, the deploy role and the GitHub OIDC provider."
+          } >> "$GITHUB_STEP_SUMMARY"
